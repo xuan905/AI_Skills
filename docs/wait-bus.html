@@ -593,6 +593,48 @@
       font-size: 16px;
       line-height: 1.6;
     }
+
+    /* Route chips (quick-stop-select after picking a route) */
+    .wb-route-stops-prompt {
+      background: var(--bg-secondary, #f0f4ff);
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .wb-route-stops-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      color: var(--text-primary, #212121);
+    }
+    .wb-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .wb-chip {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      min-height: 48px;
+      transition: background 0.2s;
+    }
+    .wb-chip:hover { background: var(--primary-dark, #0d47a1); }
+    .wb-route-stops-hint {
+      margin-top: 12px;
+      font-size: 15px;
+      color: var(--text-secondary, #555);
+    }
+
+    /* Route suggestion icon */
+    .wb-suggestion-item .wb-suggestion-icon {
+      font-size: 20px;
+    }
   </style>
 </head>
 <body>
@@ -725,9 +767,77 @@
   function ptxFetch(url) {
     return fetch(url, { headers: PTX_HEADERS })
       .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
+        if (!r.ok) return []; // graceful: 400/500 → empty result
         return r.json();
       });
+  }
+
+  // Detect if keyword looks like a route number (pure digits or alphanum like "285", "212", "綠1")
+  function isRouteKeyword(kw) {
+    return /^\d+$/.test(kw) || /^[\d\w\u4e00-\u9fff]{1,6}$/.test(kw);
+  }
+
+  // ─── Route-first autocomplete (for route-number input) ─────
+  function searchRoutes(keyword) {
+    if (!keyword || keyword.length < 1) {
+      hideSuggestions();
+      return;
+    }
+    var encoded = encodeURIComponent(keyword);
+    // Search routes by route name (also check SubRouteName for variants)
+    var url = PTX_BASE + '/Route/City/Taipei?$filter=contains(RouteName%2C%27' + encoded + '%27)&$top=8&$format=JSON';
+    ptxFetch(url)
+      .then(function (data) {
+        if (!data || data.length === 0) {
+          // Fallback: try stop search
+          searchStations(keyword);
+          return;
+        }
+        renderRouteSuggestions(data);
+      })
+      .catch(function () {
+        hideSuggestions();
+      });
+  }
+
+  function renderRouteSuggestions(routes) {
+    if (!routes || routes.length === 0) {
+      hideSuggestions();
+      return;
+    }
+    suggestionItems = routes;
+    activeSuggestionIdx = -1;
+    suggestionsBox.innerHTML = routes.map(function (r, i) {
+      var name = (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || '');
+      var sub = '';
+      if (r.SubRoutes && r.SubRoutes.length > 0) {
+        var sub0 = r.SubRoutes[0];
+        sub = (sub0.SubRouteName && sub0.SubRouteName.Zh_tw) ? sub0.SubRouteName.Zh_tw : '';
+      }
+      return '<div class="wb-suggestion-item" data-idx="' + i + '">' +
+        '<span class="wb-suggestion-icon">🚍</span>' +
+        '<span><b>' + escHtml(name) + '</b>' + (sub && sub !== name ? ' / ' + escHtml(sub) : '') + '</span>' +
+        '</div>';
+    }).join('');
+    suggestionsBox.classList.add('show');
+    suggestionsBox.querySelectorAll('.wb-suggestion-item').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var idx = parseInt(el.dataset.idx, 10);
+        pickRouteSuggestion(idx);
+      });
+    });
+  }
+
+  function pickRouteSuggestion(idx) {
+    var route = suggestionItems[idx];
+    if (!route) return;
+    var name = (route.RouteName && route.RouteName.Zh_tw) ? route.RouteName.Zh_tw : (route.RouteName || '');
+    // Store selected route; user must pick a stop next
+    selectedStop = { stopId: null, stopName: null, routeId: route.RouteID, routeName: name };
+    searchInput.value = name;
+    hideSuggestions();
+    // Prompt user to pick a stop along this route
+    showMsg('請再輸入或選擇「' + escHtml(name) + '」的站名（如：西門、仁愛路）', '');
   }
 
   // ─── Station name autocomplete ──────────────────────────────
@@ -798,6 +908,50 @@
       .catch(function (err) {
         showMsg('查詢失敗，請稍後再試。', 'error');
         console.error('ETA fetch error:', err);
+      });
+  }
+
+  // ─── Route stops: after picking a route, let user type a stop
+  function fetchRouteStopsAndPrompt(routeId, routeName) {
+    // Fetch all stops along this route from PTX StopOfRoute
+    var url = PTX_BASE + '/StopOfRoute/City/Taipei?$filter=RouteID%20eq%20%27' + encodeURIComponent(routeId) + '%27&$top=200&$format=JSON';
+    ptxFetch(url)
+      .then(function (data) {
+        if (!data || data.length === 0) {
+          showMsg('查無「' + escHtml(routeName) + '」站牌資料', 'error');
+          return;
+        }
+        // data[0] has SubRouteID + Stops[]
+        var stops = (data[0].Stops || []);
+        if (stops.length === 0) {
+          showMsg('查無「' + escHtml(routeName) + '」站牌資料', 'error');
+          return;
+        }
+        // Show first 6 stops as quick-select chips
+        var chips = stops.slice(0, 8).map(function (s) {
+          var sn = (s.StopName && s.StopName.Zh_tw) ? s.StopName.Zh_tw : (s.StopName || '');
+          return '<button class="wb-chip" data-stop-id="' + s.StopID + '" data-stop-name="' + escHtml(sn) + '">' + escHtml(sn) + '</button>';
+        }).join('');
+        var html = '<div class="wb-route-stops-prompt">' +
+          '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b> 沿線站牌</div>' +
+          '<div class="wb-chips">' + chips + '</div>' +
+          '<div class="wb-route-stops-hint">或直接在上方搜尋框輸入站名</div></div>';
+        resultsDiv.innerHTML = html;
+        resultsDiv.querySelectorAll('.wb-chip').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            selectedStop = {
+              stopId: btn.dataset.stopId,
+              stopName: btn.dataset.stopName,
+              routeId: routeId,
+              routeName: routeName
+            };
+            searchInput.value = btn.dataset.stopName;
+            fetchETA(btn.dataset.stopId);
+          });
+        });
+      })
+      .catch(function () {
+        showMsg('查詢站牌失敗，請稍後再試', 'error');
       });
   }
 
@@ -948,7 +1102,14 @@
   searchInput.addEventListener('input', function () {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function () {
-      searchStations(searchInput.value.trim());
+      var kw = searchInput.value.trim();
+      if (!kw) { hideSuggestions(); return; }
+      var isRouteNum = /^\d+$/.test(kw) || /^[\d]+[\w\u4e00-\u9fff]{0,4}$/.test(kw);
+      if (isRouteNum && kw.length <= 6) {
+        searchRoutes(kw);        // numeric input → search routes first
+      } else {
+        searchStations(kw);      // name input → search stops
+      }
     }, 300);
   });
 
@@ -1010,42 +1171,50 @@
       return;
     }
 
-    // If user picked from suggestions, selectedStop is set
-    if (selectedStop) {
+    // If user picked a route (no stop yet), fetch route stops
+    if (selectedStop && !selectedStop.stopId && selectedStop.routeId) {
+      fetchRouteStopsAndPrompt(selectedStop.routeId, selectedStop.routeName);
+      return;
+    }
+
+    // If user picked a stop from suggestions
+    if (selectedStop && selectedStop.stopId) {
       fetchETA(selectedStop.stopId);
       return;
     }
 
-    // Otherwise search by station name and take first result
+    // Otherwise: keyword search — try stop first, then route
     searchBtn.disabled = true;
     searchBtn.textContent = '查詢中…';
     showMsg('搜尋站牌中…', 'loading');
 
     var encoded = encodeURIComponent(keyword);
-    var url = PTX_BASE + '/Stop/City/Taipei?$filter=contains(StopName%2C%27' + encoded + '%27)&$top=1&$format=JSON';
-    ptxFetch(url)
+    var stopUrl = PTX_BASE + '/Stop/City/Taipei?$filter=contains(StopName%2C%27' + encoded + '%27)&$top=1&$format=JSON';
+    ptxFetch(stopUrl)
       .then(function (data) {
-        searchBtn.disabled = false;
-        searchBtn.textContent = '查　詢';
         if (data && data.length > 0) {
+          searchBtn.disabled = false;
+          searchBtn.textContent = '查　詢';
           var stop = data[0];
           var name = (stop.StopName && stop.StopName.Zh_tw) ? stop.StopName.Zh_tw : (stop.StopName || keyword);
           selectedStop = { stopId: stop.StopID, stopName: name };
           searchInput.value = name;
           fetchETA(stop.StopID);
         } else {
-          // No stop found — try as route ID
-          var routeUrl = PTX_BASE + '/Route/City/Taipei?$filter=contains(RouteName%2C%27' + encoded + '%27)&$top=1&$format=JSON';
+          // No stop found — try as route
+          var routeUrl = PTX_BASE + '/Route/City/Taipei?$filter=contains(RouteName%2C%27' + encoded + '%27)&$top=5&$format=JSON';
           return ptxFetch(routeUrl);
         }
       })
       .then(function (routeData) {
+        searchBtn.disabled = false;
+        searchBtn.textContent = '查　詢';
         if (routeData && routeData.length > 0) {
-          // Show route info and hint to use stop name
-          var rn = (routeData[0].RouteName && routeData[0].RouteName.Zh_tw) ? routeData[0].RouteName.Zh_tw : routeData[0].RouteName || keyword;
-          showMsg('請輸入「' + escHtml(rn) + '」沿線的站名（如：西門、仁愛路）再查詢', '');
-        } else if (!routeData) {
-          // Already handled above
+          // Use first route result — fetch its stops and show as chips
+          var r = routeData[0];
+          var rn = (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || keyword);
+          var rid = r.RouteID || keyword;
+          fetchRouteStopsAndPrompt(rid, rn);
         } else {
           showMsg('找不到「' + escHtml(keyword) + '」，請確認站名或路線是否正確', 'error');
         }
