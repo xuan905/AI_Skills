@@ -1,0 +1,16 @@
+# 大型快取檔案（由 build-cache.py 自動產生，使用者需自行執行脚本重建）
+# stop-coords.json 可選，網路下載較慢，可保留一份在 repo
+# data/route-full-cache.json  (~11 MB)
+# data/stop-of-route-cache.json (~12 MB)
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+.env
+
+# 資料夾層級（不放任何 json）
+data/*.json
