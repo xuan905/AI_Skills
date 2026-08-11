@@ -1233,13 +1233,14 @@
   }
 
   // ─── Route stops + realtime bus tracker ─────────────────────
-  function fetchRouteStopsAndPrompt(routeId, routeName) {
+  function fetchRouteStopsAndPrompt(routeId, routeName, routeUid) {
     resultsDiv.innerHTML = '<div class="wb-route-stops-prompt">' +
       '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b> — 站序與公車位置</div>' +
       '<div class="wb-tracker-loading">📡 抓取即時資料中…</div></div>';
 
     // Fetch in parallel: StopOfRoute (PTX) + Realtime Bus Events
-    var sorP  = ptxFetch(PTX_BASE + '/StopOfRoute/City/Taipei?$filter=RouteUID%20eq%20%27' + encodeURIComponent(routeId) + '%27&$top=500&$format=JSON');
+    var uidOrId = routeUid || routeId;
+    var sorP  = ptxFetch(PTX_BASE + '/StopOfRoute/City/Taipei?$filter=RouteUID%20eq%20%27' + encodeURIComponent(uidOrId) + '%27&$top=500&$format=JSON');
     var busP = ptxFetch('https://tcgbusfs.blob.core.windows.net/blobbus/TstBusEvent.json');
 
     Promise.all([busP, sorP])
@@ -1582,7 +1583,7 @@
 
     // If user picked a route (no stop yet), fetch route stops
     if (selectedStop && !selectedStop.stopId && selectedStop.routeId) {
-      fetchRouteStopsAndPrompt(selectedStop.routeId, selectedStop.routeName);
+      fetchRouteStopsAndPrompt(selectedStop.routeId, selectedStop.routeName, selectedStop.routeUid);
       return;
     }
 
@@ -1623,7 +1624,7 @@
           var r = routeData[0];
           var rn = (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || keyword);
           var rid = r.RouteID || keyword;
-          fetchRouteStopsAndPrompt(rid, rn);
+          fetchRouteStopsAndPrompt(rid, rn, btn.dataset.uid || rid);
         } else {
           showMsg('找不到「' + escHtml(keyword) + '」，請確認站名或路線是否正確', 'error');
         }
@@ -1689,7 +1690,8 @@
       .then(function (data) {
         allRoutes = (data || []).map(function (r) {
           return {
-            id:   r.RouteID || '',
+            id:   r.RouteID   || '',
+            uid:  r.RouteUID  || r.RouteID || '',
             name: (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || ''),
             dept: (r.DepartureStopNameZh || '').replace('站', ''),
             dest: (r.DestinationStopNameZh || '').replace('站', '')
@@ -1752,7 +1754,7 @@
     var html = '<div class="wb-qs-grid">' + list.map(function (r) {
       var first = r.name.charAt(0);
       var color = /^[藍棕紅綠橘黃]$/.test(first) ? first : '';
-      return '<button class="wb-qs-route-btn" data-color="' + escHtml(color) + '" data-id="' + escHtml(r.id) + '" data-name="' + escHtml(r.name) + '">' +
+      return '<button class="wb-qs-route-btn" data-color="' + escHtml(color) + '" data-id="' + escHtml(r.id) + '" data-uid="' + escHtml(r.uid || r.id) + '" data-name="' + escHtml(r.name) + '">' +
         '<span class="qs-route-name">' + escHtml(r.name) + '</span>' +
         (r.dest ? '<span class="qs-route-sub">往' + escHtml(r.dest) + '</span>' : '') +
         '</button>';
@@ -1767,8 +1769,8 @@
         var rname = btn.dataset.name;
         closeQuickSearch();
         searchInput.value = rname;
-        selectedStop = { stopId: null, stopName: null, routeId: rid, routeName: rname };
-        fetchRouteStopsAndPrompt(rid, rname);
+        selectedStop = { stopId: null, stopName: null, routeId: rid, routeName: rname, routeUid: btn.dataset.uid || rid };
+        fetchRouteStopsAndPrompt(rid, rname, btn.dataset.uid || rid);
       });
     });
   }
