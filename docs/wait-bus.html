@@ -2190,12 +2190,12 @@
   function renderTabs() {
     var favs = getFavs();
     var tabs = ['⭐ 收藏' + (favs.length ? ' (' + favs.length + ')' : '')];
-    tabs = tabs.concat(Object.keys(qsCache).filter(function (k) {
+    tabs = tabs.concat(Object.keys(qsCache || {}).filter(function (k) {
       return k === '全部' || qsCache[k].length > 0;
     }));
     qsTabs.innerHTML = tabs.map(function (k) {
       return '<button class="wb-qs-tab' + (k === qsActiveTab ? ' active' : '') + '" data-tab="' + k + '">' +
-        k + (k !== '全部' ? ' (' + qsCache[k].length + ')' : ' (' + allRoutes.length + ')') +
+        k + (k !== '全部' ? ' (' + ((qsCache || {})[k] || []).length + ')' : ' (' + (allRoutes || []).length + ')') +
         '</button>';
     }).join('');
     qsTabs.querySelectorAll('.wb-qs-tab').forEach(function (btn) {
@@ -2210,9 +2210,9 @@
 
   function renderQuickSearch() {
     var kw = (qsSearchIn.value || '').trim();
-    var src = qsActiveTab === '全部' ? allRoutes : (qsCache[qsActiveTab] || []);
+    var src = (qsActiveTab === '全部' ? (allRoutes || []) : (qsCache || {})[qsActiveTab]) || [];
     var list = kw
-      ? src.filter(function (r) {
+      ? (src || []).filter(function (r) {
           return r.name.indexOf(kw) !== -1 || r.dept.indexOf(kw) !== -1 || r.dest.indexOf(kw) !== -1;
         })
       : src;
