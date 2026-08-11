@@ -74,12 +74,14 @@
     const closeBtn = document.getElementById('closeSidebarBtn');
 
     function openMenu() {
+      if (!sidebar || !overlay) return;
       sidebar.classList.add('open');
       overlay.classList.add('visible');
       document.body.style.overflow = 'hidden';
     }
 
     function closeMenu() {
+      if (!sidebar || !overlay) return;
       sidebar.classList.remove('open');
       overlay.classList.remove('visible');
       document.body.style.overflow = '';
@@ -90,7 +92,7 @@
     if (overlay) overlay.addEventListener('click', closeMenu);
 
     // Close on nav link click
-    sidebar.querySelectorAll('.sidebar-link').forEach(link => {
+    if (sidebar) sidebar.querySelectorAll('.sidebar-link').forEach(link => {
       link.addEventListener('click', () => {
         if (window.innerWidth < 768) closeMenu();
       });
