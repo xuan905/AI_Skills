@@ -778,6 +778,25 @@
     .wb-sb-eta-tag b { color: #e53935; }
     [data-theme="dark"] .wb-sb-eta-tag { background: rgba(255,255,255,0.1); color: #ccc; }
     [data-theme="dark"] .wb-sb-eta-tag b { color: #ef9a9a; }
+    .wb-sb-left { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .wb-sb-plate {
+      background: #333;
+      color: #fff;
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+    [data-theme="dark"] .wb-sb-plate { background: #888; }
+    .wb-sb-right { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+    .wb-sb-countdown {
+      font-size: 26px;
+      font-weight: bold;
+      color: #1565C0;
+      text-align: center;
+      min-width: 56px;
+    }
     .wb-sb-eta-btn {
       background: var(--primary, #1565C0);
       color: #fff;
@@ -1416,7 +1435,8 @@
   }
 
   function stopSimInterval() {
-    if (simInterval) { clearInterval(simInterval); simInterval = null; }
+    if (simInterval)   { clearInterval(simInterval);   simInterval   = null; }
+    if (simCountdownInterval) { clearInterval(simCountdownInterval); simCountdownInterval = null; }
   }
 
   function advanceSim() {
@@ -1446,12 +1466,14 @@
   }
 
   // ─── Simulation state ─────────────────────────────────────────────
-  var simBuses     = {};   // { dir: [{pos, startMs}] }
-  var simStopSeqs  = {};   // { dir: [stopId] }
-  var simStopsById = {};   // { dir: {stopId: info} }
-  var simInterval  = null;
-  var SIM_MSPERSTOP = 8000;
-  var simCurrentDir = 0;
+  var simBuses      = {};   // { dir: [{pos, startMs}] }
+  var simStopSeqs   = {};   // { dir: [stopId] }
+  var simStopsById  = {};   // { dir: {stopId: info} }
+  var simInterval   = null;
+  var simCountdownInterval = null;
+  var SIM_MSPERSTOP  = 8000;
+  var simCurrentDir  = 0;
+  var SIM_PLATES     = ['FBB-123', 'FBC-567']; // simulated plates
 
   function startSim(dir, stopSeqs, stopsById) {
     stopSimInterval();
@@ -1461,25 +1483,58 @@
     var total = stopSeqs.length;
     simBuses[dir] = [];
     for (var i = 0; i < 2; i++) {
-      simBuses[dir].push({ pos: Math.floor(i * total / 2) });
+      simBuses[dir].push({ pos: Math.floor(i * total / 2), startMs: Date.now() });
     }
     renderSimBusRows();
+    renderSimStopList();
     simInterval = setInterval(advanceSim, SIM_MSPERSTOP);
+    simCountdownInterval = setInterval(tickCountdown, 250);
   }
 
   function stopSimInterval() {
-    if (simInterval) { clearInterval(simInterval); simInterval = null; }
+    if (simInterval)   { clearInterval(simInterval);   simInterval   = null; }
+    if (simCountdownInterval) { clearInterval(simCountdownInterval); simCountdownInterval = null; }
   }
 
   function advanceSim() {
-    var buses = simBuses[simCurrentDir] || [];
-    var seqs  = simStopSeqs[simCurrentDir] || [];
+    var dir   = simCurrentDir;
+    var buses = simBuses[dir] || [];
+    var seqs  = simStopSeqs[dir] || [];
     if (!seqs.length) return;
     buses.forEach(function (b) {
       b.pos = (b.pos + 1) % seqs.length;
+      b.startMs = Date.now();
     });
     renderSimBusRows();
     renderSimStopList();
+  }
+
+  // Live countdown: runs every 250ms
+  function tickCountdown() {
+    var dir   = simCurrentDir;
+    var buses = simBuses[dir] || [];
+    buses.forEach(function (bus, i) {
+      var row = document.getElementById('wb-sb-row-' + i);
+      if (!row) return;
+      var el  = document.getElementById('wb-sb-countdown-' + i);
+      if (!el) return;
+      var elapsed = Date.now() - bus.startMs;
+      var remaining = Math.max(0, SIM_MSPERSTOP - elapsed);
+      var secs = Math.ceil(remaining / 1000);
+      el.textContent = secs + '秒';
+      // Color: red if < 15s, orange < 30s
+      if (secs <= 0) {
+        el.textContent = '🚏 到站';
+        el.style.color = '#e53935';
+      } else if (secs <= 15) {
+        el.textContent = secs + '秒';
+        el.style.color = '#e53935';
+      } else if (secs <= 30) {
+        el.style.color = '#f57c00';
+      } else {
+        el.style.color = '#1565C0';
+      }
+    });
   }
 
   // Which stops does bus at position `pos` reach next?
@@ -1497,17 +1552,18 @@
   }
 
   function renderSimBusRows() {
-    var dir = simCurrentDir;
+    var dir   = simCurrentDir;
     var buses = simBuses[dir] || [];
     var seqs  = simStopSeqs[dir] || [];
-    var info   = simStopsById[dir] || {};
+    var info  = simStopsById[dir] || {};
     buses.forEach(function (bus, i) {
       var row = document.getElementById('wb-sb-row-' + i);
       if (!row) return;
       var sid  = seqs[bus.pos] || '';
       var si   = info[sid] || {};
-      row.querySelector('.wb-sb-where').textContent  = '📍 ' + (si.name || sid);
-      // Next 3 stops
+      var plate = SIM_PLATES[i] || ('車' + (i+1));
+      row.querySelector('.wb-sb-plate').textContent = '🚍 ' + plate;
+      row.querySelector('.wb-sb-where').textContent = '📍 ' + (si.name || sid);
       var next3 = busNextStops(bus.pos, dir, 3);
       var etaHtml = next3.map(function (n) {
         return '<span class="wb-sb-eta-tag">' + escHtml(n.name) + ' <b>' + n.etaMin + '分</b></span>';
@@ -1591,18 +1647,22 @@
         html += '</div>';
 
         // ── Bus position rows ────────────────────────────────────────
-        html += '<div class="wb-sb-panel">';
         for (var bi = 0; bi < 2; bi++) {
           html += '<div class="wb-sb-row" id="wb-sb-row-' + bi + '">' +
-            '<div class="wb-sb-badge">🚌 ' + (bi + 1) + '號車</div>' +
+            '<div class="wb-sb-left">' +
+              '<div class="wb-sb-badge">🚌 ' + (bi + 1) + '號車</div>' +
+              '<div class="wb-sb-plate">🚍 ' + (SIM_PLATES[bi] || ('車'+(bi+1))) + '</div>' +
+            '</div>' +
             '<div class="wb-sb-body">' +
               '<div class="wb-sb-where">📍 —</div>' +
               '<div class="wb-sb-next3"></div>' +
             '</div>' +
-            '<button class="wb-sb-eta-btn" onclick="fetchETAForStop(\'' + routeId + '\',\'' + routeName + '\')">查此站</button>' +
+            '<div class="wb-sb-right">' +
+              '<div class="wb-sb-countdown" id="wb-sb-countdown-' + bi + '">—</div>' +
+              '<button class="wb-sb-eta-btn" onclick="fetchETAForStop(\'' + routeId + '\',\'' + routeName + '\')">查此站</button>' +
+            '</div>' +
             '</div>';
         }
-        html += '</div>';
 
         // ── Simulation controls ──────────────────────────────────────
         html += '<div class="wb-sim-controls">' +
