@@ -625,6 +625,106 @@
       transition: background 0.2s;
     }
     .wb-chip:hover { background: var(--primary-dark, #0d47a1); }
+    .wb-chip-active { background: #e53935 !important; color: #fff !important; border-color: #e53935 !important; }
+    .wb-chip-active:hover { background: #c62828 !important; }
+    .wb-chip-seq {
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      margin-right: 4px;
+    }
+
+    /* Bus tracker panel */
+    .wb-tracker-loading {
+      font-size: 20px;
+      color: var(--text-secondary, #555);
+      padding: 24px 0;
+      text-align: center;
+    }
+    .wb-tracker-header { margin-top: 0; }
+    .wb-tracker-route {
+      font-size: 24px;
+      margin-bottom: 14px;
+      color: var(--primary, #1565C0);
+    }
+    .wb-bus-panel {
+      background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    [data-theme="dark"] .wb-bus-panel { background: linear-gradient(135deg, #1b5e20, #2e7d32); }
+    .wb-bus-panel-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #2e7d32;
+    }
+    [data-theme="dark"] .wb-bus-panel-title { color: #81c784; }
+    .wb-bus-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    [data-theme="dark"] .wb-bus-row { background: rgba(255,255,255,0.08); }
+    .wb-bus-badge {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .wb-bus-loc { flex: 1; }
+    .wb-bus-where {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--text-primary, #212121);
+    }
+    .wb-bus-at-stop { color: #e53935; }
+    .wb-bus-next {
+      font-size: 14px;
+      color: var(--text-secondary, #555);
+      margin-top: 2px;
+    }
+    .wb-bus-eta-box {
+      background: #e53935;
+      color: #fff;
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      text-align: center;
+      min-width: 64px;
+    }
+    .wb-tracker-no-bus {
+      background: var(--bg-secondary, #f0f4ff);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      font-size: 18px;
+      color: var(--text-secondary, #555);
+      margin-bottom: 16px;
+    }
+    .wb-tracker-stops-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: var(--text-secondary, #555);
+    }
+    .wb-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .wb-route-stops-hint {
       margin-top: 12px;
       font-size: 15px;
@@ -1132,32 +1232,119 @@
       });
   }
 
-  // ─── Route stops: after picking a route, let user type a stop
+  // ─── Route stops + realtime bus tracker ─────────────────────
   function fetchRouteStopsAndPrompt(routeId, routeName) {
-    // Fetch all stops along this route from PTX StopOfRoute
-    var url = PTX_BASE + '/StopOfRoute/City/Taipei?$filter=RouteID%20eq%20%27' + encodeURIComponent(routeId) + '%27&$top=200&$format=JSON';
-    ptxFetch(url)
-      .then(function (data) {
-        if (!data || data.length === 0) {
+    resultsDiv.innerHTML = '<div class="wb-route-stops-prompt">' +
+      '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b> — 站序與公車位置</div>' +
+      '<div class="wb-tracker-loading">📡 抓取即時資料中…</div></div>';
+
+    // Fetch in parallel: StopOfRoute (PTX) + Realtime Bus Events
+    var sorP  = ptxFetch(PTX_BASE + '/StopOfRoute/City/Taipei?$filter=RouteUID%20eq%20%27' + encodeURIComponent(routeId) + '%27&$top=500&$format=JSON');
+    var busP = ptxFetch('https://tcgbusfs.blob.core.windows.net/blobbus/TstBusEvent.json');
+
+    Promise.all([busP, sorP])
+      .then(function (results) {
+        var busData = results[0]; // TstBusEvent
+        var sorData = results[1]; // StopOfRoute
+        busData = Array.isArray(busData) ? busData : [];
+        sorData = Array.isArray(sorData) ? sorData : [];
+
+        if (sorData.length === 0) {
           showMsg('查無「' + escHtml(routeName) + '」站牌資料', 'error');
           return;
         }
-        // data[0] has SubRouteID + Stops[]
-        var stops = (data[0].Stops || []);
-        if (stops.length === 0) {
-          showMsg('查無「' + escHtml(routeName) + '」站牌資料', 'error');
-          return;
+
+        // Build stop lookup: { stopId -> { seq, name, lat, lon, dir } }
+        var stopsById = {};
+        var stopSeqs  = []; // ordered by sequence
+        sorData.forEach(function (sr) {
+          var dir = sr.Direction === 0 ? '去程' : '返程';
+          (sr.Stops || []).forEach(function (s) {
+            var sid = s.StopID;
+            if (!stopsById[sid]) {
+              stopsById[sid] = {
+                seq:   s.StopSequence,
+                name:  (s.StopName && s.StopName.Zh_tw) ? s.StopName.Zh_tw : (s.StopName || ''),
+                lat:   s.StopPosition ? s.StopPosition.PositionLat : null,
+                lon:   s.StopPosition ? s.StopPosition.PositionLon : null,
+                dir:   dir,
+                routeId: routeId
+              };
+              stopSeqs.push(sid);
+            }
+          });
+        });
+
+        // Filter buses on this route
+        var routeBuses = busData.filter(function (b) {
+          // Match RouteID or RouteUID
+          return b.RouteID == routeId || b.RouteID === routeId;
+        });
+
+        // Build tracker HTML
+        var html = '<div class="wb-tracker-header">' +
+          '<div class="wb-tracker-route">🚍 <b>' + escHtml(routeName) + '</b></div>';
+
+        if (routeBuses.length > 0) {
+          // ── Realtime bus positions ──────────────────────────────
+          html += '<div class="wb-bus-panel">' +
+            '<div class="wb-bus-panel-title">🟢 即時公車位置</div>';
+
+          routeBuses.forEach(function (bus) {
+            var busStopId = bus.StopID;
+            var stopInfo  = stopsById[busStopId] || null;
+            var stopName  = stopInfo ? stopInfo.name : ('站 ' + busStopId);
+            var seq       = stopInfo ? stopInfo.seq : null;
+            var carOnStop = bus.CarOnStop === '1';
+
+            // Next-stop ETA: find the stop AFTER current in sequence
+            var nextStopId  = null;
+            var nextStopName = '';
+            var stopsRemaining = 0;
+            if (seq !== null) {
+              var idx = stopSeqs.indexOf(busStopId);
+              if (idx >= 0 && idx < stopSeqs.length - 1) {
+                var nextId = stopSeqs[idx + 1];
+                nextStopId   = nextId;
+                nextStopName = (stopsById[nextId] || {}).name || '';
+                stopsRemaining = stopSeqs.length - seq;
+              }
+            }
+
+            // Estimate ETA to next stop: ~2 min per stop
+            var etaMins = carOnStop ? '< 1 分鐘內' : (seq !== null ? Math.round(stopsRemaining * 1.8) + ' 分鐘' : '推算中…');
+
+            html += '<div class="wb-bus-row">' +
+              '<div class="wb-bus-badge">🚌 ' + escHtml(bus.BusID || bus.CarID || '') + '</div>' +
+              '<div class="wb-bus-loc">' +
+                '<div class="wb-bus-where">📍 ' + escHtml(stopName) + (carOnStop ? ' <span class="wb-bus-at-stop">靠站中</span>' : ' 行駛中') + '</div>' +
+                (nextStopName ? '<div class="wb-bus-next">下一站 ' + escHtml(nextStopName) + '　⏱ ' + etaMins + '</div>' : '') +
+              '</div>' +
+              '<div class="wb-bus-eta-box">' + etaMins + '</div>' +
+              '</div>';
+          });
+          html += '</div>';
+        } else {
+          html += '<div class="wb-tracker-no-bus">📭 目前無即時車機資料（可能已收班）</div>';
         }
-        // Show first 6 stops as quick-select chips
-        var chips = stops.slice(0, 8).map(function (s) {
-          var sn = (s.StopName && s.StopName.Zh_tw) ? s.StopName.Zh_tw : (s.StopName || '');
-          return '<button class="wb-chip" data-stop-id="' + s.StopID + '" data-stop-name="' + escHtml(sn) + '">' + escHtml(sn) + '</button>';
-        }).join('');
-        var html = '<div class="wb-route-stops-prompt">' +
-          '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b> 沿線站牌</div>' +
-          '<div class="wb-chips">' + chips + '</div>' +
-          '<div class="wb-route-stops-hint">或直接在上方搜尋框輸入站名</div></div>';
+
+        // ── Stop sequence chips ─────────────────────────────────
+        html += '<div class="wb-tracker-stops-title">站序一覽（點擊查 ETA）</div>' +
+          '<div class="wb-chips">';
+        stopSeqs.forEach(function (sid) {
+          var si = stopsById[sid];
+          html += '<button class="wb-chip';
+          // Highlight if a bus is here
+          var busHere = routeBuses.some(function (b) { return b.StopID === sid; });
+          if (busHere) html += ' wb-chip-active';
+          html += '" data-stop-id="' + sid + '" data-stop-name="' + escHtml(si.name) + '">' +
+            '<span class="wb-chip-seq">' + si.seq + '</span> ' + escHtml(si.name) + '</button>';
+        });
+        html += '</div></div>';
+
         resultsDiv.innerHTML = html;
+
+        // Wire chip clicks → fetch ETA for that stop
         resultsDiv.querySelectorAll('.wb-chip').forEach(function (btn) {
           btn.addEventListener('click', function () {
             selectedStop = {
@@ -1171,8 +1358,9 @@
           });
         });
       })
-      .catch(function () {
+      .catch(function (err) {
         showMsg('查詢站牌失敗，請稍後再試', 'error');
+        console.error(err);
       });
   }
 
