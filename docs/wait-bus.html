@@ -1116,6 +1116,42 @@
       text-align: center;
     }
     .wb-quick-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(21,101,192,0.3); }
+    /* ─── Favorites ─── */
+    .wb-qs-favs { display: flex; flex-direction: column; gap: 8px; padding: 4px; }
+    .wb-fav-item { display: flex; align-items: center; gap: 8px; }
+    .wb-fav-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #fff8e1, #fff3e0);
+      border: 2px solid #ffc107;
+      border-radius: 14px;
+      padding: 14px 18px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    [data-theme="dark"] .wb-fav-btn { background: linear-gradient(135deg, #3e2723, #4e342e); border-color: #ff8f00; }
+    .wb-fav-name { font-size: 20px; font-weight: bold; color: #333; }
+    [data-theme="dark"] .wb-fav-name { color: #fff; }
+    .wb-fav-dest { font-size: 14px; color: #888; }
+    .wb-fav-del {
+      background: #ff5252; color: #fff; border: none;
+      border-radius: 50%; width: 32px; height: 32px;
+      font-size: 16px; cursor: pointer; flex-shrink: 0;
+    }
+    .wb-fav-del:hover { background: #d32f2f; }
+    .wb-qs-tab[data-tab*="收藏"] { color: #f57f17 !important; border-color: #f57f17 !important; }
+    .wb-qs-tab[data-tab*="收藏"].active { background: #f57f17 !important; color: #fff !important; }
+    .wb-fav-toggle {
+      background: #fff3e0; border: 2px solid #ffc107;
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 15px; cursor: pointer; color: #333;
+    }
+    .wb-fav-toggle-active { background: #ffc107 !important; color: #333 !important; font-weight: bold; }
+    [data-theme="dark"] .wb-fav-toggle { background: #3e2723; border-color: #ff8f00; color: #fff; }
+    [data-theme="dark"] .wb-fav-toggle-active { background: #ff8f00 !important; color: #fff !important; }
+    .wb-fav-toggle:hover { opacity: 0.8; }
   </style>
 </head>
 <body>
@@ -1223,7 +1259,55 @@
   'use strict';
 
   // ─── Theme init (mirror main.js logic) ───────────────────────
-  const STORAGE_KEY_THEME = 'taipei-bus-docs-theme';
+  const STORAGE_KEY_THEME    = 'taipei-bus-docs-theme';
+  const FAV_KEY             = 'wb-favorites-v2';
+  function getFavs()  { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) { return []; } }
+  function saveFavs(arr)    { localStorage.setItem(FAV_KEY, JSON.stringify(arr)); }
+  function isFav(id)        { return getFavs().some(function(f){ return f.id === id; }); }
+  function addFav(routeId, routeUid, routeName, dest) {
+    var arr = getFavs();
+    if (arr.some(function(f){ return f.id === routeId; })) return;
+    arr.unshift({ id: routeId, uid: routeUid, name: routeName, dest: dest || '', addedAt: Date.now() });
+    saveFavs(arr);
+  }
+  function removeFav(id) {
+    saveFavs(getFavs().filter(function(f){ return f.id !== id; }));
+  }
+  function qsRenderFavs() {
+    var favs = getFavs();
+    if (favs.length === 0) {
+      qsContent.innerHTML = '<div class="wb-empty" style="margin-top:40px">' +
+        '<div class="wb-empty-icon">⭐</div><div class="wb-empty-title">還沒有收藏</div>' +
+        '<div class="wb-empty-desc">查看路線時，按「⭐ 收藏」加入</div></div>';
+      return;
+    }
+    qsContent.innerHTML = '<div class="wb-qs-favs">' + favs.map(function(f) {
+      return '<div class="wb-fav-item" data-id="' + escHtml(f.id) + '">' +
+        '<button class="wb-fav-btn" data-id="' + escHtml(f.id) + '" data-uid="' + escHtml(f.uid||f.id) + '" data-name="' + escHtml(f.name) + '">' +
+          '<span class="wb-fav-name">' + escHtml(f.name) + '</span>' +
+          (f.dest ? '<span class="wb-fav-dest">往 ' + escHtml(f.dest) + '</span>' : '') +
+        '</button>' +
+        '<button class="wb-fav-del" data-id="' + escHtml(f.id) + '" title="移除">✕</button>' +
+      '</div>';
+    }).join('') + '</div>';
+    qsContent.scrollTop = 0;
+    qsContent.querySelectorAll('.wb-fav-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        closeQuickSearch();
+        searchInput.value = btn.dataset.name;
+        selectedStop = { stopId:null, stopName:null, routeId:btn.dataset.id, routeName:btn.dataset.name, routeUid:btn.dataset.uid||btn.dataset.id };
+        fetchRouteStopsAndPrompt(btn.dataset.id, btn.dataset.name, btn.dataset.uid||btn.dataset.id);
+      });
+    });
+    qsContent.querySelectorAll('.wb-fav-del').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        removeFav(btn.dataset.id);
+        qsRenderFavs();
+        renderTabs();
+      });
+    });
+  }
 
   function getTheme() {
     const stored = localStorage.getItem(STORAGE_KEY_THEME);
@@ -1635,7 +1719,7 @@
         var defaultDir = dirKeys[0] !== undefined ? dirKeys[0] : 0;
 
         // ── HTML ──────────────────────────────────────────────────────
-        var html = '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b></div>';
+        var html = '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b>　<button class="wb-fav-toggle" id="wbFavToggle" onclick="toggleFav(\'\')">⭐ 收藏</button></div>';
 
         // Tab bar
         html += '<div class="wb-dir-tabs" id="wbDirTabs">';
@@ -1693,6 +1777,11 @@
         html += '</div></div>'; // wb-slist-container, inner
 
         resultsDiv.innerHTML = html;
+
+        // Update fav button state
+        if (document.getElementById('wbFavToggle')) {
+          toggleFav(routeId); // sync star state
+        }
 
         // ── Wire tabs ──────────────────────────────────────────────
         document.getElementById('wbDirTabs').addEventListener('click', function (e) {
@@ -2044,6 +2133,7 @@
   });
 
   function openQuickSearch() {
+    renderTabs();  // refresh fav count
     qsOverlay.classList.add('show');
     document.body.style.overflow = 'hidden';
     if (!qsCache) {
@@ -2098,9 +2188,11 @@
   }
 
   function renderTabs() {
-    var tabs = Object.keys(qsCache).filter(function (k) {
+    var favs = getFavs();
+    var tabs = ['⭐ 收藏' + (favs.length ? ' (' + favs.length + ')' : '')];
+    tabs = tabs.concat(Object.keys(qsCache).filter(function (k) {
       return k === '全部' || qsCache[k].length > 0;
-    });
+    }));
     qsTabs.innerHTML = tabs.map(function (k) {
       return '<button class="wb-qs-tab' + (k === qsActiveTab ? ' active' : '') + '" data-tab="' + k + '">' +
         k + (k !== '全部' ? ' (' + qsCache[k].length + ')' : ' (' + allRoutes.length + ')') +
@@ -2111,7 +2203,7 @@
         qsActiveTab = btn.dataset.tab;
         qsTabs.querySelectorAll('.wb-qs-tab').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
-        renderQuickSearch();
+        if (qsActiveTab.indexOf('收藏') !== -1) { qsRenderFavs(); } else { renderQuickSearch(); }
       });
     });
   }
@@ -2156,6 +2248,28 @@
       });
     });
   }
+
+  // Global: toggle favorite for current route
+  function toggleFav(routeId) {
+    var id   = routeId || (selectedStop && selectedStop.routeId) || '';
+    var uid  = selectedStop && selectedStop.routeUid || id;
+    var name = selectedStop && selectedStop.routeName || '';
+    // get destination from current tab
+    var activeTab = document.querySelector('.wb-dir-tab-active');
+    var dest = activeTab ? activeTab.textContent.replace('→','').trim() : '';
+    if (isFav(id)) {
+      removeFav(id);
+    } else {
+      addFav(id, uid, name, dest);
+    }
+    var btn = document.getElementById('wbFavToggle');
+    if (btn) {
+      btn.textContent = isFav(id) ? '★ 已收藏' : '☆ 收藏';
+      btn.classList.toggle('wb-fav-toggle-active', isFav(id));
+    }
+  }
+  window.toggleFav = toggleFav;
+  window.fetchETAForStop = fetchETAForStop;
 
 })();
 </script>
