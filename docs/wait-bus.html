@@ -718,12 +718,86 @@
       color: var(--text-secondary, #555);
       margin-bottom: 16px;
     }
-    /* Simulation controls */
+    /* ── Direction tabs ── */
+    .wb-dir-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .wb-dir-tab {
+      background: var(--bg-secondary, #f0f4ff);
+      border: 2px solid var(--primary, #1565C0);
+      border-radius: 24px;
+      padding: 10px 22px;
+      font-size: 17px;
+      font-weight: bold;
+      color: var(--primary, #1565C0);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .wb-dir-tab-active {
+      background: var(--primary, #1565C0);
+      color: #fff;
+    }
+    [data-theme="dark"] .wb-dir-tab { border-color: var(--accent, #8b5cf6); color: var(--accent, #8b5cf6); }
+    [data-theme="dark"] .wb-dir-tab-active { background: var(--accent, #8b5cf6); color: #fff; }
+
+    /* ── Bus position rows ── */
+    .wb-sb-panel { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .wb-sb-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #e3f2fd, #f1f8e9);
+      border-radius: 16px;
+      padding: 14px 16px;
+      border: 2px solid #90caf9;
+    }
+    [data-theme="dark"] .wb-sb-row { background: linear-gradient(135deg, #0d47a1, #1b5e20); border-color: #1e88e5; }
+    .wb-sb-badge {
+      background: #e53935;
+      color: #fff;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 18px;
+      font-weight: bold;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .wb-sb-body { flex: 1; }
+    .wb-sb-where { font-size: 19px; font-weight: bold; color: var(--text-primary, #212121); margin-bottom: 4px; }
+    .wb-sb-next3 { display: flex; gap: 6px; flex-wrap: wrap; }
+    .wb-sb-eta-tag {
+      background: rgba(0,0,0,0.07);
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-size: 14px;
+      color: var(--text-secondary, #555);
+    }
+    .wb-sb-eta-tag b { color: #e53935; }
+    [data-theme="dark"] .wb-sb-eta-tag { background: rgba(255,255,255,0.1); color: #ccc; }
+    [data-theme="dark"] .wb-sb-eta-tag b { color: #ef9a9a; }
+    .wb-sb-eta-btn {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .wb-sb-eta-btn:hover { background: var(--primary-dark, #0d47a1); }
+
+    /* ── Simulation controls ── */
     .wb-sim-controls {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 12px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
     }
     .wb-sim-btn {
@@ -739,6 +813,75 @@
     .wb-sim-btn-stop { background: #e53935; }
     .wb-sim-note { font-size: 13px; color: var(--text-secondary, #888); }
     [data-theme="dark"] .wb-sim-note { color: #aaa; }
+
+    /* ── Stop list ── */
+    .wb-slist-container {
+      height: 500px;
+      overflow-y: auto;
+      border: 2px solid var(--border-color, #ddd);
+      border-radius: 16px;
+      background: var(--bg-secondary, #f8f9fa);
+    }
+    [data-theme="dark"] .wb-slist-container { border-color: #333; background: #1a1a1a; }
+    .wb-slist-inner { padding: 8px; }
+    .wb-slist-dir { }
+    .wb-slist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 4px;
+      background: var(--bg-primary, #fff);
+      border: 1.5px solid transparent;
+      transition: background 0.2s;
+    }
+    [data-theme="dark"] .wb-slist-item { background: #1e1e1e; }
+    .wb-slist-item:hover { border-color: var(--primary, #1565C0); background: #e3f2fd; }
+    [data-theme="dark"] .wb-slist-item:hover { background: #1a3a6e; }
+    .wb-slist-bus-here {
+      background: #ffebee !important;
+      border-color: #e53935 !important;
+    }
+    [data-theme="dark"] .wb-slist-bus-here { background: #3a1a1a !important; border-color: #ef5350 !important; }
+    .wb-slist-left { display: flex; align-items: center; gap: 12px; }
+    .wb-slist-seq {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .wb-slist-name { font-size: 18px; font-weight: bold; color: var(--text-primary, #212121); }
+    .wb-slist-right { display: flex; align-items: center; gap: 8px; }
+    .wb-slist-bus-badge {
+      background: #e53935;
+      color: #fff;
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .wb-slist-btn {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 7px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      min-width: 60px;
+    }
+    .wb-slist-btn:hover { background: var(--primary-dark, #0d47a1); }
+    [data-theme="dark"] .wb-slist-btn { background: var(--accent, #8b5cf6); }
+    [data-theme="dark"] .wb-slist-btn:hover { background: #6d28d9; }
     .wb-tracker-stops-title { font-size: 18px;
       font-weight: bold;
       margin-bottom: 10px;
@@ -1302,11 +1445,97 @@
     });
   }
 
-  // ─── Route stops: show stop sequence + animated bus tracker ──────────────
+  // ─── Simulation state ─────────────────────────────────────────────
+  var simBuses     = {};   // { dir: [{pos, startMs}] }
+  var simStopSeqs  = {};   // { dir: [stopId] }
+  var simStopsById = {};   // { dir: {stopId: info} }
+  var simInterval  = null;
+  var SIM_MSPERSTOP = 8000;
+  var simCurrentDir = 0;
+
+  function startSim(dir, stopSeqs, stopsById) {
+    stopSimInterval();
+    simCurrentDir   = dir;
+    simStopSeqs[dir]  = stopSeqs;
+    simStopsById[dir] = stopsById;
+    var total = stopSeqs.length;
+    simBuses[dir] = [];
+    for (var i = 0; i < 2; i++) {
+      simBuses[dir].push({ pos: Math.floor(i * total / 2) });
+    }
+    renderSimBusRows();
+    simInterval = setInterval(advanceSim, SIM_MSPERSTOP);
+  }
+
+  function stopSimInterval() {
+    if (simInterval) { clearInterval(simInterval); simInterval = null; }
+  }
+
+  function advanceSim() {
+    var buses = simBuses[simCurrentDir] || [];
+    var seqs  = simStopSeqs[simCurrentDir] || [];
+    if (!seqs.length) return;
+    buses.forEach(function (b) {
+      b.pos = (b.pos + 1) % seqs.length;
+    });
+    renderSimBusRows();
+    renderSimStopList();
+  }
+
+  // Which stops does bus at position `pos` reach next?
+  function busNextStops(pos, dir, howMany) {
+    var seqs  = simStopSeqs[dir] || [];
+    var info   = simStopsById[dir] || {};
+    var result = [];
+    for (var i = 1; i <= howMany; i++) {
+      var idx  = (pos + i) % seqs.length;
+      var sid  = seqs[idx];
+      var si   = info[sid] || {};
+      result.push({ name: si.name || sid, seq: si.seq || idx + 1, etaMin: i });
+    }
+    return result;
+  }
+
+  function renderSimBusRows() {
+    var dir = simCurrentDir;
+    var buses = simBuses[dir] || [];
+    var seqs  = simStopSeqs[dir] || [];
+    var info   = simStopsById[dir] || {};
+    buses.forEach(function (bus, i) {
+      var row = document.getElementById('wb-sb-row-' + i);
+      if (!row) return;
+      var sid  = seqs[bus.pos] || '';
+      var si   = info[sid] || {};
+      row.querySelector('.wb-sb-where').textContent  = '📍 ' + (si.name || sid);
+      // Next 3 stops
+      var next3 = busNextStops(bus.pos, dir, 3);
+      var etaHtml = next3.map(function (n) {
+        return '<span class="wb-sb-eta-tag">' + escHtml(n.name) + ' <b>' + n.etaMin + '分</b></span>';
+      }).join('');
+      row.querySelector('.wb-sb-next3').innerHTML = etaHtml || '<span class="wb-sb-eta-tag">末站</span>';
+    });
+  }
+
+  function renderSimStopList() {
+    var dir = simCurrentDir;
+    var seqs  = simStopSeqs[dir] || [];
+    var info   = simStopsById[dir] || {};
+    var buses  = simBuses[dir] || [];
+    seqs.forEach(function (sid) {
+      var li = document.querySelector('.wb-slist-item[data-sid="' + sid + '"]');
+      if (!li) return;
+      var hasBus = buses.some(function (b) { return seqs[b.pos] === sid; });
+      li.classList.toggle('wb-slist-bus-here', hasBus);
+      var badge = li.querySelector('.wb-slist-bus-badge');
+      if (badge) badge.style.display = hasBus ? '' : 'none';
+    });
+  }
+
+  // ─── Route stops: two-tab list view with simulated buses ────────────
   function fetchRouteStopsAndPrompt(routeId, routeName, routeUid) {
     stopSimInterval();
     resultsDiv.innerHTML = '<div class="wb-route-stops-prompt">' +
-      '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b> — 站序</div>' +
+      '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b></div>' +
       '<div class="wb-tracker-loading">📡 抓取站序資料中…</div></div>';
 
     var uidOrId = routeUid || routeId;
@@ -1318,81 +1547,121 @@
           return;
         }
 
-        var stopsById = {};
-        var stopSeqs  = [];
+        // Separate by direction
+        var dirs = {}; // { dir: { stopSeqs:[], stopsById:{}, destName:'' } }
         sorData.forEach(function (sr) {
-          var dirLabel = sr.Direction === 0 ? '去程' : '返程';
+          var dir     = sr.Direction === 0 ? 0 : 1;
+          var dirName = dir === 0 ? '去程' : '返程';
+          var dest    = (sr.DestinationStopNameZh || '').replace('站', '');
+          if (!dirs[dir]) dirs[dir] = { stopSeqs: [], stopsById: {}, destName: dest, dirName: dirName };
           (sr.Stops || []).forEach(function (s) {
             var sid = s.StopID;
-            if (!stopsById[sid]) {
-              stopsById[sid] = {
+            if (!dirs[dir].stopsById[sid]) {
+              dirs[dir].stopsById[sid] = {
                 seq:  s.StopSequence,
                 name: (s.StopName && s.StopName.Zh_tw) ? s.StopName.Zh_tw : (s.StopName || ''),
                 lat:  s.StopPosition ? s.StopPosition.PositionLat : null,
-                lon:  s.StopPosition ? s.StopPosition.PositionLon : null,
-                dir:  dirLabel
+                lon:  s.StopPosition ? s.StopPosition.PositionLon : null
               };
-              stopSeqs.push(sid);
+              dirs[dir].stopSeqs.push(sid);
             }
           });
         });
 
-        stopSeqs.sort(function (a, b) { return stopsById[a].seq - stopsById[b].seq; });
-        var totalStops = stopSeqs.length;
+        // Sort each direction by sequence
+        Object.keys(dirs).forEach(function (d) {
+          dirs[d].stopSeqs.sort(function (a, b) {
+            return dirs[d].stopsById[a].seq - dirs[d].stopsById[b].seq;
+          });
+        });
 
-        var html = '<div class="wb-tracker-header">' +
-          '<div class="wb-tracker-route">🚍 <b>' + escHtml(routeName) + '</b>　共 ' + totalStops + ' 站</div>' +
-          '<div class="wb-bus-panel">' +
-          '<div class="wb-bus-panel-title">🚌 公車動態模擬（班距推算）</div>';
+        var dirKeys = Object.keys(dirs).map(Number).sort();
+        var defaultDir = dirKeys[0] !== undefined ? dirKeys[0] : 0;
 
+        // ── HTML ──────────────────────────────────────────────────────
+        var html = '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b></div>';
+
+        // Tab bar
+        html += '<div class="wb-dir-tabs" id="wbDirTabs">';
+        dirKeys.forEach(function (d) {
+          var dest = dirs[d].destName || (d === 0 ? '去程' : '返程');
+          html += '<button class="wb-dir-tab' + (d === defaultDir ? ' wb-dir-tab-active' : '') + '" data-dir="' + d + '">' +
+            (d === 0 ? '去程' : '返程') + ' → ' + escHtml(dest) + '</button>';
+        });
+        html += '</div>';
+
+        // ── Bus position rows ────────────────────────────────────────
+        html += '<div class="wb-sb-panel">';
         for (var bi = 0; bi < 2; bi++) {
-          var sid0 = stopSeqs[Math.floor(bi * totalStops / 2)] || stopSeqs[0];
-          var si0  = stopsById[sid0] || {};
-          html += '<div class="wb-sim-bus-row wb-bus-row">' +
-            '<div class="wb-bus-badge">🚌 ' + (bi + 1) + '號車</div>' +
-            '<div class="wb-bus-loc">' +
-              '<div class="wb-sim-bus-where wb-bus-where">📍 ' + escHtml(si0.name || sid0) + ' 行駛中</div>' +
-              '<div class="wb-sim-bus-eta wb-bus-next">⏱ 班距中</div>' +
+          html += '<div class="wb-sb-row" id="wb-sb-row-' + bi + '">' +
+            '<div class="wb-sb-badge">🚌 ' + (bi + 1) + '號車</div>' +
+            '<div class="wb-sb-body">' +
+              '<div class="wb-sb-where">📍 —</div>' +
+              '<div class="wb-sb-next3"></div>' +
             '</div>' +
-            '<div class="wb-sim-bus-chip wb-chip" style="background:var(--primary);color:#fff;font-size:16px;padding:6px 10px;border-radius:8px;">🚏 ' + escHtml(si0.name || sid0) + '</div>' +
+            '<button class="wb-sb-eta-btn" onclick="fetchETAForStop(\'' + routeId + '\',\'' + routeName + '\')">查此站</button>' +
             '</div>';
         }
+        html += '</div>';
 
+        // ── Simulation controls ──────────────────────────────────────
         html += '<div class="wb-sim-controls">' +
-          '<button class="wb-sim-btn" id="wbSimStart">▶ 播放模擬</button>' +
+          '<button class="wb-sim-btn" id="wbSimStart">▶ 播放</button>' +
           '<button class="wb-sim-btn wb-sim-btn-stop" id="wbSimStop">⏸ 暫停</button>' +
-          '<span class="wb-sim-note">⚠️ 為班距推算，非實際車機定位</span>' +
-          '</div></div>' +
-          '<div class="wb-tracker-stops-title">站序一覽（點擊任一站查 ETA）</div>' +
-          '<div class="wb-chips wb-sim-stops">';
+          '<span class="wb-sim-note">⚠️ 班距推算，非實際車機</span>' +
+          '</div>';
 
-        stopSeqs.forEach(function (sid) {
-          var si = stopsById[sid];
-          html += '<button class="wb-chip wb-sim-chip" data-stop-id="' + sid + '" data-stop-name="' + escHtml(si.name) + '">' +
-            '<span class="wb-chip-seq">' + si.seq + '</span> ' + escHtml(si.name) + '</button>';
+        // ── Stop list (500px height, scrollable) ───────────────────
+        html += '<div class="wb-slist-container" id="wbSlist"><div class="wb-slist-inner">';
+        dirKeys.forEach(function (d) {
+          html += '<div class="wb-slist-dir" id="wbSlistDir' + d + '" style="display:' + (d === defaultDir ? 'block' : 'none') + '">';
+          dirs[d].stopSeqs.forEach(function (sid) {
+            var si = dirs[d].stopsById[sid];
+            html += '<div class="wb-slist-item" data-sid="' + sid + '" data-dir="' + d + '">' +
+              '<div class="wb-slist-left">' +
+                '<span class="wb-slist-seq">' + si.seq + '</span>' +
+                '<span class="wb-slist-name">' + escHtml(si.name) + '</span>' +
+              '</div>' +
+              '<div class="wb-slist-right">' +
+                '<span class="wb-slist-bus-badge wb-bus-badge" style="display:none">🚌 在站</span>' +
+                '<button class="wb-slist-btn" data-sid="' + sid + '" data-sname="' + escHtml(si.name) + '">ETA</button>' +
+              '</div>' +
+            '</div>';
+          });
+          html += '</div>'; // wb-slist-dir
         });
-        html += '</div></div>';
+        html += '</div></div>'; // wb-slist-container, inner
 
         resultsDiv.innerHTML = html;
 
-        document.getElementById('wbSimStart').addEventListener('click', function () {
-          startSimulation(stopSeqs, stopsById);
-        });
-        document.getElementById('wbSimStop').addEventListener('click', function () {
+        // ── Wire tabs ──────────────────────────────────────────────
+        document.getElementById('wbDirTabs').addEventListener('click', function (e) {
+          var tab = e.target.closest('.wb-dir-tab');
+          if (!tab) return;
+          var newDir = parseInt(tab.dataset.dir, 10);
+          document.querySelectorAll('.wb-dir-tab').forEach(function (t) { t.classList.remove('wb-dir-tab-active'); });
+          tab.classList.add('wb-dir-tab-active');
+          document.querySelectorAll('.wb-slist-dir').forEach(function (d) { d.style.display = 'none'; });
+          document.getElementById('wbSlistDir' + newDir).style.display = 'block';
           stopSimInterval();
+          renderSimStopList(); // re-render with new dir's data
         });
 
-        resultsDiv.querySelectorAll('.wb-chip').forEach(function (btn) {
+        // ── Wire sim controls ───────────────────────────────────────
+        document.getElementById('wbSimStart').addEventListener('click', function () {
+          var activeDir = parseInt(document.querySelector('.wb-dir-tab-active').dataset.dir, 10);
+          startSim(activeDir, dirs[activeDir].stopSeqs, dirs[activeDir].stopsById);
+        });
+        document.getElementById('wbSimStop').addEventListener('click', stopSimInterval);
+
+        // ── Wire stop ETA buttons ───────────────────────────────────
+        resultsDiv.querySelectorAll('.wb-slist-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
-            selectedStop = {
-              stopId: btn.dataset.stopId,
-              stopName: btn.dataset.stopName,
-              routeId: routeId,
-              routeName: routeName,
-              routeUid: routeUid
-            };
-            searchInput.value = btn.dataset.stopName;
-            fetchETA(btn.dataset.stopId);
+            var sid  = btn.dataset.sid;
+            var sname = btn.dataset.sname;
+            selectedStop = { stopId: sid, stopName: sname, routeId: routeId, routeName: routeName, routeUid: routeUid };
+            searchInput.value = sname;
+            fetchETA(sid);
           });
         });
       })
@@ -1402,6 +1671,21 @@
       });
   }
 
+  // Global helper called from inline onclick
+  function fetchETAForStop(routeId, routeName) {
+    var activeDir = parseInt(document.querySelector('.wb-dir-tab-active').dataset.dir, 10);
+    var seqs = simStopSeqs[activeDir] || [];
+    var info = simStopsById[activeDir] || {};
+    // Find first bus position
+    var buses = simBuses[activeDir] || [];
+    if (!buses.length) return;
+    var busPos = buses[0].pos;
+    var sid = seqs[busPos];
+    var si  = info[sid] || {};
+    selectedStop = { stopId: sid, stopName: si.name || sid, routeId: routeId, routeName: routeName };
+    searchInput.value = si.name || sid;
+    fetchETA(sid);
+  }
 
   // ─── Render results ─────────────────────────────────────────
   function renderResults(data, stopName) {
