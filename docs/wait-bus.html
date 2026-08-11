@@ -635,6 +635,205 @@
     .wb-suggestion-item .wb-suggestion-icon {
       font-size: 20px;
     }
+
+    /* ─── Large Quick-Search Modal ───────────────────────────── */
+    .wb-qs-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 20px 0;
+    }
+    .wb-qs-overlay.show { display: flex; }
+
+    .wb-qs-modal {
+      background: var(--bg-primary, #FFFEF5);
+      width: 100%;
+      max-width: 700px;
+      min-height: 90vh;
+      border-radius: 24px 24px 0 0;
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(60px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .wb-qs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      flex-shrink: 0;
+    }
+    .wb-qs-title {
+      font-size: 26px;
+      font-weight: bold;
+      color: var(--text-primary, #212121);
+    }
+    .wb-qs-close {
+      background: var(--bg-secondary, #f0f4ff);
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wb-qs-search {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      flex-shrink: 0;
+    }
+    .wb-qs-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 18px;
+      font-size: 20px;
+      border: 2px solid var(--primary, #1565C0);
+      border-radius: 14px;
+      background: var(--bg-primary, #FFFEF5);
+      color: var(--text-primary, #212121);
+      outline: none;
+    }
+
+    /* Category tabs */
+    .wb-qs-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      flex-shrink: 0;
+    }
+    .wb-qs-tab {
+      background: var(--bg-secondary, #f0f4ff);
+      border: 2px solid transparent;
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--text-primary, #212121);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .wb-qs-tab.active {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-color: var(--primary, #1565C0);
+    }
+    .wb-qs-tab:hover:not(.active) { border-color: var(--primary, #1565C0); }
+
+    .wb-qs-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px 32px;
+    }
+    .wb-qs-loading {
+      text-align: center;
+      font-size: 20px;
+      padding: 40px;
+      color: var(--text-secondary, #555);
+    }
+    .wb-qs-cat-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--text-secondary, #555);
+      margin: 16px 0 10px;
+      border-bottom: 2px solid var(--border-color, #e2e8f0);
+      padding-bottom: 4px;
+    }
+    .wb-qs-cat-title:first-child { margin-top: 0; }
+
+    .wb-qs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .wb-qs-route-btn {
+      background: var(--bg-secondary, #f0f4ff);
+      border: 2px solid var(--border-color, #e2e8f0);
+      border-radius: 14px;
+      padding: 12px 10px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--text-primary, #212121);
+      text-align: center;
+      transition: all 0.15s;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .wb-qs-route-btn:hover {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-color: var(--primary, #1565C0);
+      transform: scale(1.04);
+    }
+    .wb-qs-route-btn .qs-route-name {
+      font-size: 22px;
+      font-weight: 900;
+    }
+    .wb-qs-route-btn .qs-route-sub {
+      font-size: 12px;
+      font-weight: 400;
+      opacity: 0.75;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    /* Route color badges */
+    .wb-qs-route-btn[data-color="紅"] { border-color: #ef4444; }
+    .wb-qs-route-btn[data-color="藍"] { border-color: #3b82f6; }
+    .wb-qs-route-btn[data-color="棕"] { border-color: #92400e; }
+    .wb-qs-route-btn[data-color="綠"] { border-color: #22c55e; }
+    .wb-qs-route-btn[data-color="黃"] { border-color: #eab308; }
+    .wb-qs-route-btn[data-color="橘"] { border-color: #f97316; }
+
+    [data-theme="dark"] .wb-qs-route-btn { background: #1a1a1a; border-color: #333; }
+    [data-theme="dark"] .wb-qs-tabs,
+    [data-theme="dark"] .wb-qs-header,
+    [data-theme="dark"] .wb-qs-search { background: #111; }
+    [data-theme="dark"] .wb-qs-modal { background: #111; }
+
+    /* ─── Quick-search trigger button ─── */
+    .wb-quick-btn {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #1565C0, #0d47a1);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .wb-quick-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(21,101,192,0.3); }
   </style>
 </head>
 <body>
@@ -650,6 +849,10 @@
   <!-- Title -->
   <h1 class="wb-title">等公車 🚌</h1>
   <p class="wb-subtitle">輸入站名或路線編號，馬上知道公車何時到</p>
+
+  <!-- Notification hint -->
+    <!-- Quick Search Modal trigger -->
+  <button class="wb-quick-btn" id="wbQuickBtn">🚌 快速查詢　全部公車路線</button>
 
   <!-- Notification hint -->
   <div class="wb-hint">
@@ -701,7 +904,25 @@
 </div>
 
 <!-- Alarm Modal -->
-<div class="wb-modal-overlay" id="wbModalOverlay">
+  <!-- Quick-Search full-screen modal -->
+  <div class="wb-qs-overlay" id="wbQsOverlay">
+    <div class="wb-qs-modal" role="dialog" aria-modal="true" aria-label="快速查詢公車">
+      <div class="wb-qs-header">
+        <div class="wb-qs-title">🚌 全部公車路線</div>
+        <button class="wb-qs-close" id="wbQsClose">✕</button>
+      </div>
+      <div class="wb-qs-search">
+        <input class="wb-qs-search-input" id="wbQsSearchInput" type="text" placeholder="搜尋路線…" autocomplete="off" autocorrect="off">
+      </div>
+      <div class="wb-qs-tabs" id="wbQsTabs"></div>
+      <div class="wb-qs-content" id="wbQsContent">
+        <div class="wb-qs-loading" id="wbQsLoading">載入中…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Existing alarm/reminder modal -->
+  <div class="wb-modal-overlay" id="wbModalOverlay">
   <div class="wb-modal" role="dialog" aria-modal="true" aria-labelledby="wbModalTitle">
     <div class="wb-modal-icon" id="wbModalIcon">🔔</div>
     <h2 class="wb-modal-title" id="wbModalTitle">已記下提醒！</h2>
@@ -1228,6 +1449,141 @@
   }
 
   searchBtn.addEventListener('click', doSearch);
+
+  // ─── Quick-Search Modal ───────────────────────────────────
+  var qsOverlay  = document.getElementById('wbQsOverlay');
+  var qsContent  = document.getElementById('wbQsContent');
+  var qsTabs     = document.getElementById('wbQsTabs');
+  var qsSearchIn = document.getElementById('wbQsSearchInput');
+  var qsLoading  = document.getElementById('wbQsLoading');
+
+  var allRoutes = [];      // full list from PTX
+  var qsCache   = null;    // { cat: [routes], other: [routes] }
+  var qsActiveTab = '全部';
+  var qsDebounce  = null;
+
+  document.getElementById('wbQuickBtn').addEventListener('click', openQuickSearch);
+  document.getElementById('wbQsClose').addEventListener('click', closeQuickSearch);
+  qsOverlay.addEventListener('click', function (e) {
+    if (e.target === qsOverlay) closeQuickSearch();
+  });
+  qsSearchIn.addEventListener('input', function () {
+    clearTimeout(qsDebounce);
+    qsDebounce = setTimeout(renderQuickSearch, 200);
+  });
+
+  function openQuickSearch() {
+    qsOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    if (!qsCache) {
+      loadAllRoutes();
+    } else {
+      renderTabs();
+      renderQuickSearch();
+    }
+  }
+
+  function closeQuickSearch() {
+    qsOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+    qsSearchIn.value = '';
+  }
+
+  function loadAllRoutes() {
+    qsLoading.style.display = 'block';
+    qsLoading.textContent = '載入全部公車路線…';
+    qsContent.innerHTML = '';
+    qsContent.appendChild(qsLoading);
+    qsContent.scrollTop = 0;
+    qsTabs.innerHTML = '';
+    var url = PTX_BASE + '/Route/City/Taipei?$top=500&$format=JSON';
+    ptxFetch(url)
+      .then(function (data) {
+        allRoutes = (data || []).map(function (r) {
+          return {
+            id:   r.RouteID || '',
+            name: (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || ''),
+            dept: (r.DepartureStopNameZh || '').replace('站', ''),
+            dest: (r.DestinationStopNameZh || '').replace('站', '')
+          };
+        });
+        // Classify by first character
+        var cats = { '全部': allRoutes, '紅': [], '藍': [], '棕': [], '綠': [], '黃': [], '橘': [] };
+        allRoutes.forEach(function (r) {
+          var first = r.name.charAt(0);
+          if (/^[藍棕紅綠橘黃]$/.test(first)) cats[first].push(r);
+          else cats['全部'].push(r);
+        });
+        // Remove empty categories from tabs
+        qsCache = cats;
+        renderTabs();
+        renderQuickSearch();
+        qsLoading.style.display = 'none';
+      })
+      .catch(function () {
+        qsLoading.textContent = '載入失敗，請關閉後重試';
+      });
+  }
+
+  function renderTabs() {
+    var tabs = Object.keys(qsCache).filter(function (k) {
+      return k === '全部' || qsCache[k].length > 0;
+    });
+    qsTabs.innerHTML = tabs.map(function (k) {
+      return '<button class="wb-qs-tab' + (k === qsActiveTab ? ' active' : '') + '" data-tab="' + k + '">' +
+        k + (k !== '全部' ? ' (' + qsCache[k].length + ')' : ' (' + allRoutes.length + ')') +
+        '</button>';
+    }).join('');
+    qsTabs.querySelectorAll('.wb-qs-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        qsActiveTab = btn.dataset.tab;
+        qsTabs.querySelectorAll('.wb-qs-tab').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        renderQuickSearch();
+      });
+    });
+  }
+
+  function renderQuickSearch() {
+    var kw = (qsSearchIn.value || '').trim();
+    var src = qsActiveTab === '全部' ? allRoutes : (qsCache[qsActiveTab] || []);
+    var list = kw
+      ? src.filter(function (r) {
+          return r.name.indexOf(kw) !== -1 || r.dept.indexOf(kw) !== -1 || r.dest.indexOf(kw) !== -1;
+        })
+      : src;
+
+    if (list.length === 0) {
+      qsContent.innerHTML = '<div class="wb-empty" style="margin-top:40px">' +
+        '<div class="wb-empty-icon">🔍</div>' +
+        '<div class="wb-empty-title">查無符合路線</div>' +
+        '<div class="wb-empty-desc">試著換個關鍵字</div></div>';
+      return;
+    }
+
+    var html = '<div class="wb-qs-grid">' + list.map(function (r) {
+      var first = r.name.charAt(0);
+      var color = /^[藍棕紅綠橘黃]$/.test(first) ? first : '';
+      return '<button class="wb-qs-route-btn" data-color="' + escHtml(color) + '" data-id="' + escHtml(r.id) + '" data-name="' + escHtml(r.name) + '">' +
+        '<span class="qs-route-name">' + escHtml(r.name) + '</span>' +
+        (r.dest ? '<span class="qs-route-sub">往' + escHtml(r.dest) + '</span>' : '') +
+        '</button>';
+    }).join('') + '</div>';
+
+    qsContent.innerHTML = html;
+    qsContent.scrollTop = 0;
+
+    qsContent.querySelectorAll('.wb-qs-route-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var rid  = btn.dataset.id;
+        var rname = btn.dataset.name;
+        closeQuickSearch();
+        searchInput.value = rname;
+        selectedStop = { stopId: null, stopName: null, routeId: rid, routeName: rname };
+        fetchRouteStopsAndPrompt(rid, rname);
+      });
+    });
+  }
 
 })();
 </script>
