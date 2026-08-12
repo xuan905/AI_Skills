@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xuan905 Skills · OpenClaw 技能中心</title>
+  <meta name="description" content="xuan905 的 OpenClaw AI 技能中心，收錄老子AI、耶穌AI、佛陀AI、圖書館管家、卡拉OK伴侶等實用技能。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== NAV ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="logo-mark">x</div>
+        <div class="logo-text">
+          <span class="logo-name">xuan905</span>
+          <span class="logo-sub">Skills</span>
+        </div>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#skills" class="active">Skills</a></li>
+        <li><a href="#about">About</a></li>
+        <li class="lang-group">
+          <button class="lang-btn active" data-lang="zh-TW">繁</button>
+          <button class="lang-btn" data-lang="zh-CN">簡</button>
+          <button class="lang-btn" data-lang="en">EN</button>
+        </li>
+        <li>
+          <button class="theme-btn" id="themeBtn" aria-label="Toggle theme">
+            <span id="themeIcon">☀️</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="home">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span data-i18n="hero.badge">OpenClaw Skill Showcase</span>
+      </div>
+      <h1 class="hero-title">
+        <span data-i18n="hero.title">你的 AI 技能中心</span>
+      </h1>
+      <p class="hero-desc" data-i18n="hero.desc">
+        收錄多元 AI 技能，從東方哲學到西方信仰，從圖書管理到創意工具。<br>
+        安裝一個，改變你與 AI 的互動方式。
+      </p>
+      <div class="hero-actions">
+        <a href="#skills" class="btn btn-primary" data-i18n="hero.btnBrowse">探索全部技能</a>
+        <a href="https://clawhub.ai" target="_blank" class="btn btn-outline" data-i18n="hero.btnClawhub">ClawHub 市場</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <strong id="skillCount">8</strong>
+          <span data-i18n="hero.statSkills">精選技能</span>
+        </div>
+        <div class="stat">
+          <strong>5</strong>
+          <span data-i18n="hero.statCats">分類</span>
+        </div>
+        <div class="stat">
+          <strong>3</strong>
+          <span data-i18n="hero.statLang">語言</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-cards-preview" id="heroCards">
+      <!-- JS 動態生成 -->
+    </div>
+  </section>
+
+  <!-- ===== SKILLS ===== -->
+  <section class="section skills-section" id="skills">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow" data-i18n="skills.eyebrow">✦ OpenClaw Skills</p>
+        <h2 class="section-title" data-i18n="skills.title">全部技能</h2>
+        <p class="section-desc" data-i18n="skills.desc">點擊名稱查看詳情，點擊按鈕直接安裝</p>
+      </div>
+
+      <!-- Category Filters -->
+      <div class="category-tabs" id="categoryTabs">
+        <button class="cat-tab active" data-cat="all" data-i18n="skills.catAll">全部</button>
+        <button class="cat-tab" data-cat="philosophy" data-i18n="skills.catPhilosophy">🌿 哲學・信仰</button>
+        <button class="cat-tab" data-cat="knowledge" data-i18n="skills.catKnowledge">📚 知識・學習</button>
+        <button class="cat-tab" data-cat="life" data-i18n="skills.catLife">🎵 生活・創意</button>
+        <button class="cat-tab" data-cat="tools" data-i18n="skills.catTools">🛠️ 工具・系統</button>
+      </div>
+
+      <!-- Skills Grid -->
+      <div class="skills-grid" id="skillsGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== SKILL DETAIL MODAL ===== -->
+  <div class="modal-overlay" id="skillModal">
+    <div class="modal" role="dialog">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- ===== ABOUT ===== -->
+  <section class="section about-section" id="about">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">About</p>
+        <h2 class="section-title" data-i18n="about.title">關於這個專案</h2>
+      </div>
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="about-icon">🤖</div>
+          <h3 data-i18n="about.card1Title">OpenClaw 技能系統</h3>
+          <p data-i18n="about.card1Desc">Skills 是 OpenClaw 的擴充模組，讓 AI 助手具備專業領域知識、工具與工作流程，觸發簡單，威力強大。</p>
+          <a href="https://openclaw.ai" target="_blank" class="about-link">openclaw.ai →</a>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">🌐</div>
+          <h3 data-i18n="about.card2Title">ClawHub 生態</h3>
+          <p data-i18n="about.card2Desc">所有技能均收錄於 ClawHub 市場，可一鍵安裝、即時啟用，支援作者訂閱與社群貢獻。</p>
+          <a href="https://clawhub.ai" target="_blank" class="about-link">clawhub.ai →</a>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">🛠️</div>
+          <h3 data-i18n="about.card3Title">持續擴充中</h3>
+          <p data-i18n="about.card3Desc">xuan905 持續開發新技能，涵蓋教育、健康、創作、生產力等多元領域。敬請期待更多作品。</p>
+          <a href="https://github.com/xuan905" target="_blank" class="about-link">GitHub →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="logo-mark">x</div>
+          <div>
+            <p class="footer-name">xuan905</p>
+            <p class="footer-sub" data-i18n="footer.sub">OpenClaw Skill Developer</p>
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/xuan905" target="_blank" data-i18n="footer.github">GitHub</a>
+          <a href="https://clawhub.ai" target="_blank" data-i18n="footer.clawhub">ClawHub</a>
+          <a href="https://xuan905.github.io/laozi-ai-skill/" target="_blank" data-i18n="footer.laozi">老子AI</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 xuan905 · MIT License</p>
+        <p class="footer-quote" data-i18n="footer.quote">「道可道，非常道」</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
