@@ -81,7 +81,7 @@ const SKILLS = [
     accentBg: '#FFE8F0',
     clawhubUrl: 'https://clawhub.ai/xuan905/skills/jesus-ai-conversation',
     githubUrl: 'https://github.com/xuan905/jesus-ai-conversation',
-    siteUrl: 'https://xuan905.github.io/',
+    siteUrl: null,
     installCmd: 'clawhub install jesus-ai-conversation',
     keywords: ['耶穌', '聖經', '祈禱', '信仰', '基督教', 'Jesus', 'Bible', 'Prayer'],
     featured: true,
@@ -90,6 +90,7 @@ const SKILLS = [
   {
     id: 'buddha-ai',
     name: '佛陀AI',
+    siteUrl: 'https://xuan905.github.io/buddha-quotes/',
     name_en: 'Buddha AI',
     slug: 'sakyamuni-buddha-skill',
     icon: '☸',
@@ -119,6 +120,7 @@ const SKILLS = [
   {
     id: 'confucius-ai',
     name: '孔子AI',
+    siteUrl: 'https://xuan905.github.io/confucius-ai-skill/',
     name_en: 'Confucius AI',
     slug: 'confucius-ai',
     icon: '儒',
