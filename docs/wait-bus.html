@@ -833,6 +833,13 @@
     .wb-sim-note { font-size: 13px; color: var(--text-secondary, #888); }
     [data-theme="dark"] .wb-sim-note { color: #aaa; }
 
+    /* ── Real-time bus ── */
+    .wb-sb-row-real { border-color: #43a047 !important; border-width: 2px !important; }
+    .wb-sb-badge-real { background: #43a047 !important; }
+    .wb-sb-seq { font-size: 13px; font-weight: normal; color: var(--text-secondary, #888); }
+    .wb-chip-next { background: #e3f2fd; color: #1565C0; font-size: 13px; padding: 2px 8px; border-radius: 10px; border: 1px solid #bbdefb; }
+    [data-theme="dark"] .wb-chip-next { background: #1a3a5c; color: #90caf9; border-color: #1e4976; }
+
     /* ── Stop list ── */
     .wb-slist-container {
       height: 500px;
@@ -1344,6 +1351,84 @@
   var activeSuggestionIdx = -1;
   var suggestionItems = [];
 
+  // ─── TDX API ─────────────────────────────────────────────────
+  // 即時到站 / GPS 定位（需 OAuth2 認證）
+  var TDX_CLIENT_ID     = '';
+  var TDX_CLIENT_SECRET = '';
+  var TDX_TOKEN         = null;
+  var TDX_TOKEN_EXP     = 0;
+  var TDX_API_BASE      = 'https://tdx.transportdata.tw/api/basic/v2';
+  var TDX_TOKEN_URL     = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token';
+
+  // 從 URL 注入：?tdx_id=xxx&tdx_secret=yyy
+  (function parseTdxFromUrl() {
+    try {
+      var params = new URLSearchParams(location.search);
+      var id  = params.get('tdx_id');
+      var sec = params.get('tdx_secret');
+      if (id && sec) { TDX_CLIENT_ID = id; TDX_CLIENT_SECRET = sec; }
+    } catch(e) {}
+  })();
+
+  function tdxHeaders() {
+    if (!TDX_TOKEN || Date.now() >= TDX_TOKEN_EXP - 60_000) return null;
+    return { Authorization: 'Bearer ' + TDX_TOKEN, Accept: 'application/json', 'User-Agent': 'taipei-bus-skill' };
+  }
+
+  async function tdxGetToken() {
+    if (!TDX_CLIENT_ID) return null;
+    if (TDX_TOKEN && Date.now() < TDX_TOKEN_EXP - 60_000) return TDX_TOKEN;
+    var body = 'grant_type=client_credentials&client_id=' + encodeURIComponent(TDX_CLIENT_ID) +
+               '&client_secret=' + encodeURIComponent(TDX_CLIENT_SECRET);
+    var res = await fetch(TDX_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'taipei-bus-skill' },
+      body: body
+    });
+    if (!res.ok) { TDX_TOKEN = null; return null; }
+    var tok = await res.json();
+    TDX_TOKEN = tok.access_token;
+    TDX_TOKEN_EXP = Date.now() + tok.expires_in * 1000;
+    return TDX_TOKEN;
+  }
+
+  async function tdxFetch(path) {
+    var h = tdxHeaders();
+    if (!h) return null;
+    var res = await fetch(TDX_API_BASE + path, { headers: h });
+    if (res.status === 401) { TDX_TOKEN = null; return null; }
+    if (!res.ok) return [];
+    return res.json().catch(function() { return []; });
+  }
+
+  async function tdxGetLiveBuses(routeUid, direction) {
+    var filters = ["RouteUID eq '" + routeUid + "'"];
+    if (direction !== undefined) filters.push('Direction eq ' + direction);
+    var q = '?$filter=' + encodeURIComponent(filters.join(' and '));
+    return await tdxFetch('/Bus/RealTimeNearStop/City/Taipei' + q) || [];
+  }
+
+  async function tdxGetETA(routeUid, direction) {
+    var filters = ["RouteUID eq '" + routeUid + "'"];
+    if (direction !== undefined) filters.push('Direction eq ' + direction);
+    var q = '?$filter=' + encodeURIComponent(filters.join(' and '));
+    return await tdxFetch('/Bus/EstimatedTimeOfArrival/City/Taipei' + q) || [];
+  }
+
+  function tdxFmtETA(sec) {
+    if (!sec && sec !== 0) return '—';
+    if (sec < 0) return '末班已過';
+    if (sec < 60) return sec + '秒';
+    var m = Math.floor(sec / 60), s = sec % 60;
+    if (m >= 60) {
+      var h = Math.floor(m / 60), mm = m % 60;
+      return s > 0 ? h + '小時' + mm + '分' : h + '小時' + mm + '分';
+    }
+    return s > 0 ? m + '分' + s + '秒' : m + '分';
+  }
+
+  if (TDX_CLIENT_ID) { tdxGetToken(); }
+
   // ─── PTX fetch helper ────────────────────────────────────────
   var PTX_BASE = 'https://ptx.transportdata.tw/MOTC/v2/Bus';
   var PTX_HEADERS = {
@@ -1730,9 +1815,21 @@
         });
         html += '</div>';
 
+        // ── Real-time bus data (async, non-blocking) ──────────────────
+        if (TDX_CLIENT_ID) {
+          tdxGetLiveBuses(routeUid, defaultDir).then(function(buses) {
+            if (buses && buses.length > 0) {
+              renderRealBusRows(buses, dirs[defaultDir].stopSeqs, dirs[defaultDir].stopsById, defaultDir, routeId, routeName, routeUid);
+            }
+          }).catch(function() {});
+          tdxGetETA(routeUid, defaultDir).then(function(eta) {
+            if (eta && eta.length > 0) { window._tdxETA = eta; }
+          }).catch(function() {});
+        }
+
         // ── Bus position rows ────────────────────────────────────────
         for (var bi = 0; bi < 2; bi++) {
-          html += '<div class="wb-sb-row" id="wb-sb-row-' + bi + '">' +
+          html += '<div class="wb-sb-row" id="wb-sb-row-' + bi + '" data-real="false">' +
             '<div class="wb-sb-left">' +
               '<div class="wb-sb-badge">🚌 ' + (bi + 1) + '號車</div>' +
               '<div class="wb-sb-plate">🚍 ' + (SIM_PLATES[bi] || ('車'+(bi+1))) + '</div>' +
@@ -1748,11 +1845,64 @@
             '</div>';
         }
 
+        // ── Real bus renderer (called when TDX returns) ──────────────
+        window.renderRealBusRows = function(buses, stopSeqs, stopsById, dir, routeId, routeName, routeUid) {
+          if (!buses || buses.length === 0) return;
+          buses.slice(0, 2).forEach(function(bus, i) {
+            var row = document.getElementById('wb-sb-row-' + i);
+            if (!row) return;
+            row.setAttribute('data-real', 'true');
+            row.classList.add('wb-sb-row-real');
+            var plate    = bus.PlateNumb || '—';
+            var stopName = (bus.StopName && bus.StopName.Zh_tw) ? bus.StopName.Zh_tw : (bus.StopName || '—');
+            var stopSeq  = bus.StopSequence;
+            var etaRec   = (window._tdxETA || []).find(function(e) {
+              return e.StopID === bus.StopID && e.Direction === bus.Direction;
+            });
+            var etaSec = etaRec ? etaRec.EstimateTime : null;
+            var etaStr = tdxFmtETA(etaSec);
+            var statusBadge = '';
+            if (bus.A2EventType === 1)        statusBadge = '<span class="wb-sb-eta-tag wb-eta-red">🚏 到站</span>';
+            else if (etaSec !== null && etaSec !== undefined) statusBadge = '<span class="wb-sb-eta-tag wb-eta-orange">' + etaStr + '</span>';
+
+            var seqIdx = stopSeqs.indexOf(String(bus.StopID));
+            var next3 = '';
+            if (seqIdx >= 0) {
+              for (var ni = 1; ni <= 3; ni++) {
+                var nidx = seqIdx + ni;
+                if (nidx < stopSeqs.length) {
+                  var ns = stopsById[stopSeqs[nidx]];
+                  if (ns) next3 += '<span class="wb-chip wb-chip-next">' + ns.name + '</span>';
+                }
+              }
+            }
+
+            row.innerHTML = '<div class="wb-sb-left">' +
+              '<div class="wb-sb-badge wb-sb-badge-real">📡 實時</div>' +
+              '<div class="wb-sb-plate">🚍 ' + escHtml(plate) + '</div>' +
+            '</div>' +
+            '<div class="wb-sb-body">' +
+              '<div class="wb-sb-where">📍 ' + escHtml(stopName) + ' <span class="wb-sb-seq">第' + stopSeq + '站</span></div>' +
+              '<div class="wb-sb-next3">' + next3 + '</div>' +
+            '</div>' +
+            '<div class="wb-sb-right">' +
+              statusBadge +
+              '<button class="wb-sb-eta-btn" onclick="fetchETAForStop(\'' + routeId + '\',\'' + routeName + '\')">查此站</button>' +
+            '</div>';
+          });
+          var simNote = document.querySelector('.wb-sim-note');
+          if (simNote) simNote.textContent = '📡 實時車機資料（TDX）';
+        };
+
         // ── Simulation controls ──────────────────────────────────────
+        var simNoteText = TDX_CLIENT_ID
+          ? '<span class="wb-sim-note">📡 即時定位（自動抓取中）…</span>'
+          : '<span class="wb-sim-note">⚠️ 班距推算，非實際車機</span>';
         html += '<div class="wb-sim-controls">' +
           '<button class="wb-sim-btn" id="wbSimStart">▶ 播放</button>' +
           '<button class="wb-sim-btn wb-sim-btn-stop" id="wbSimStop">⏸ 暫停</button>' +
-          '<span class="wb-sim-note">⚠️ 班距推算，非實際車機</span>' +
+          '<button class="wb-sim-btn" id="wbRefreshLive" title="重新抓取實時車機">🔄</button>' +
+          simNoteText +
           '</div>';
 
         // ── Stop list (500px height, scrollable) ───────────────────
@@ -1802,6 +1952,21 @@
           startSim(activeDir, dirs[activeDir].stopSeqs, dirs[activeDir].stopsById);
         });
         document.getElementById('wbSimStop').addEventListener('click', stopSimInterval);
+
+        document.getElementById('wbRefreshLive').addEventListener('click', function() {
+          if (!TDX_CLIENT_ID) { showMsg('請在網址列加入 ?tdx_id=…&tdx_secret=…', 'info'); return; }
+          var activeDir = parseInt(document.querySelector('.wb-dir-tab-active').dataset.dir, 10);
+          this.textContent = '⏳';
+          var self = this;
+          tdxGetLiveBuses(routeUid, activeDir).then(function(buses) {
+            self.textContent = '🔄';
+            if (buses && buses.length > 0) {
+              renderRealBusRows(buses, dirs[activeDir].stopSeqs, dirs[activeDir].stopsById, activeDir, routeId, routeName, routeUid);
+            } else {
+              showMsg('目前無即時車機資料（可能已收班）', 'info');
+            }
+          }).catch(function() { self.textContent = '🔄'; showMsg('抓取失敗，請稍後再試', 'error'); });
+        });
 
         // ── Wire stop ETA buttons ───────────────────────────────────
         resultsDiv.querySelectorAll('.wb-slist-btn').forEach(function (btn) {

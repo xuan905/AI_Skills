@@ -1,6 +1,21 @@
 # SKILL.md — 臺北市公車定點車機 Skill
 
-> 版本：1.2.0 | 更新：2026-08-10
+> 版本：1.3.0 | 更新：2026-08-12
+
+## ⚡ TDX API 設定
+
+**2026-08-12 起，即時到站（ETA）與公車 GPS 改用 TDX API（需帳號密碼）。**
+
+設定環境變數：
+```bash
+# 在 OpenClaw 執行環境中設定（重啟後需重新設定）
+export TDX_CLIENT_ID="qpooqp777-4f331bb2-492e-453f"
+export TDX_CLIENT_SECRET="c03942c5-905d-46a3-814f-3776811c69a0"
+```
+
+或在啟動腳本（如 `~/.zshrc`）加入以上兩行。
+
+> 無法設定環境變數時，`tdx.js` 會自動降級至 PTX 免費公開端點（ETA 可能為空）。
 
 ---
 
@@ -17,10 +32,11 @@ bus dynamic、bus ETA、台北公車、臺北市公車
 
 ## 簡介
 
-串接三個資料來源：
-1. **臺北市定點車機 OD** 即時 API — 公車即時位置
-2. **PTX Bus Stop API** — 站牌座標（28,741 站）
-3. **PTX Bus Route/StopOfRoute API** — 公車路線含站序（415 條）
+串接四個資料來源：
+1. **TDX API**（需帳密）— 即時到站（ETA）與公車 GPS 定位
+2. **臺北市定點車機 OD** 即時 API — 公車即時位置（無需認證）
+3. **PTX Bus Stop API** — 站牌座標（28,741 站）
+4. **PTX Bus Route/StopOfRoute API** — 公車路線含站序（415 條）
 
 提供：即時車位查詢、**依站序精確 ETA**、路線資訊、地圖視覺化、脫班偵測等功能。
 
@@ -39,12 +55,14 @@ bus dynamic、bus ETA、台北公車、臺北市公車
 
 ## 資料來源
 
-| 來源 | URL | 內容 | 快取 |
+| 來源 | URL | 內容 | 需要認證 |
 |------|-----|------|------|
-| 車機即時 | `tcgbusfs.blob.core.windows.net/blobbus/TstBusEvent.json` | 即時車位 | 無（每次即時抓） |
-| PTX 站牌 | `ptx.transportdata.tw/MOTC/v2/Bus/Stop/City/Taipei` | 28,741 站座標 | `data/stop-coords.json` |
-| PTX 路線 | `ptx.transportdata.tw/MOTC/v2/Bus/Route/City/Taipei` | 415 條路名/起訖 | `data/route-full-cache.json` |
-| PTX 站序 | `ptx.transportdata.tw/MOTC/v2/Bus/StopOfRoute/City/Taipei` | 站點順序/方向 | `data/route-full-cache.json` |
+| **TDX 即時** | `tdx.transportdata.tw/api/basic/v2/Bus/EstimatedTimeOfArrival/City/Taipei` | 到站預估（秒） | ✅ Client ID/Secret |
+| **TDX GPS** | `tdx.transportdata.tw/api/basic/v2/Bus/RealTimeNearStop/City/Taipei` | 公車 GPS 定位 | ✅ Client ID/Secret |
+| 車機即時 | `tcgbusfs.blob.core.windows.net/blobbus/TstBusEvent.json` | 即時車位 | ❌ |
+| PTX 站牌 | `ptx.transportdata.tw/MOTC/v2/Bus/Stop/City/Taipei` | 28,741 站座標 | ❌ |
+| PTX 路線 | `ptx.transportdata.tw/MOTC/v2/Bus/Route/City/Taipei` | 415 條路名/起訖 | ❌ |
+| PTX 站序 | `ptx.transportdata.tw/MOTC/v2/Bus/StopOfRoute/City/Taipei` | 站點順序/方向 | ❌ |
 
 ---
 
@@ -52,6 +70,7 @@ bus dynamic、bus ETA、台北公車、臺北市公車
 
 ```
 lib/
+├── tdx.js             — TDX OAuth2 認證 + 即時 API（需環境變數）
 ├── bus-api.js         — 核心整合（車機 + PTX）
 ├── route-api.js       — PTX 路名/站序（快取查詢）
 └── stop-coords.js    — PTX 座標查詢（快取查詢）
@@ -60,6 +79,24 @@ lib/
 ---
 
 ## 核心函式速查
+
+### TDX 即時資料（需設定 TDX_CLIENT_ID/SECRET）
+```javascript
+const { tdxGetETA, tdxGetLiveBuses, tdxGetStopsOfRoute, tdxFormatETA } = require('./lib/bus-api.js');
+
+// ETA（到站預估，秒）
+await tdxGetETA('TPE10132', 0)   // → [{ StopName, EstimateTime, StopStatus, ... }]
+
+// 即時公車 GPS（車牌 + 目前站 + 方向）
+await tdxGetLiveBuses('TPE10132', 0)  // → [{ PlateNumb, StopName, StopSequence, Direction, A2EventType, GPSTime }]
+
+// 站序（含座標，TDX StopOfRoute）
+await tdxGetStopsOfRoute('TPE10132', 0)  // → [{ StopID, StopName, StopSequence, StopPosition, ... }]
+
+tdxFormatETA(105)  // → '1分45秒'
+tdxFormatETA(3661) // → '1小時1分'
+tdxFormatETA(null) // → '末班已過'
+```
 
 ### 即時車機（fetchAll, findByRoute...）
 ```javascript
@@ -213,10 +250,11 @@ hotspots.forEach((h, i) =>
 ## 限制
 
 1. **ID 體系不相通**：TstBusEvent 與 PTX 的 RouteID/StopID 為獨立系統，需站名/路線名搜尋建立對照
-2. **ETA 精度**：站序版 ±1-2 站，快取為靜態snapshot
+2. **ETA 精度**：站序版 ±1-2 站，快取為靜態 snapshot
 3. **即時資料覆蓋**：TstBusEvent 僅含部分在線車機車輛，非全部公車
 4. **無轉乘推薦**：需 geocoding + 轉乘 API，目前未實作
 5. **無擁擠度資料**：目前 API 不含乘客人數
+6. **TDX 無法設定時降級**：若無 `TDX_CLIENT_ID/SECRET`，ETA 改用站序推估（±1-2 站誤差）
 
 ---
 
