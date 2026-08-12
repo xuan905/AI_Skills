@@ -354,6 +354,35 @@ const SKILLS = [
     featured: false,
     tags: ['圖書館', '自動化', 'OPAC', 'M7'],
   },
+  {
+    id: 'zhouyi-site-skill',
+    name: '賽博周易',
+    name_en: 'Cyber Zhouyi',
+    slug: 'zhouyi-site-skill',
+    icon: '易',
+    iconEmoji: '☯️',
+    category: 'philosophy',
+    categoryLabel: { 'zh-TW': '哲學・信仰', 'zh-CN': '哲学・信仰', 'en': 'Philosophy & Faith' },
+    tagline: {
+      'zh-TW': '三幣起卦、64卦解讀與決策反思',
+      'zh-CN': '三币起卦、64卦解读与决策反思',
+      'en': 'Three-coin casting, 64 hexagrams & reflective decision guidance'
+    },
+    desc: {
+      'zh-TW': '賽博周易把《易經》的觀察框架轉成可重複使用的 AI Skill：支援三幣六爻起卦、64 卦三語系詳細解讀、20 個生活問題快速載入、本機歷史紀錄與 JSON／PNG 分享卡片匯出。它不替你預言，而是把問題放回結構、節奏與可行動的下一步。',
+      'zh-CN': '赛博周易把《易经》的观察框架转成可重复使用的 AI Skill：支持三币六爻起卦、64 卦三语详细解读、20 个生活问题快速载入、本机历史记录与 JSON／PNG 分享卡片导出。它不替你预言，而是把问题放回结构、节奏与可行动的下一步。',
+      'en': 'Cyber Zhouyi turns the I Ching observation framework into a reusable AI Skill: three-coin casting, detailed 64-hexagram readings in three languages, 20 everyday prompts, local history, and JSON/PNG share-card export. It does not predict for you—it brings the question back to structure, rhythm, and an actionable next step.'
+    },
+    accentColor: '#A8793E',
+    accentBg: '#F7F0E5',
+    clawhubUrl: null,
+    githubUrl: 'https://github.com/xuan905/cyber-zhouyi-official',
+    siteUrl: 'https://xuan905.github.io/cyber-zhouyi-official/',
+    installCmd: null,
+    keywords: ['周易', '易經', '起卦', '六爻', '64卦', 'I Ching', 'Hexagram', 'Decision Reflection'],
+    featured: true,
+    tags: ['周易', '三幣法', '三語', '決策反思'],
+  },
 ];
 
 // 供 app.js 取用
