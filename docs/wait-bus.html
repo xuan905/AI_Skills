@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>等公車 🚌 — 臺北公車長者友善查詢</title>
+  <meta name="description" content="輸入站名或路線，查詢臺北市公車到站時間，長者友善大字版">
+  <!-- Load existing theme/localStorage logic from main.js -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚌</text></svg>">
+
+  <style>
+    /* ─── wait-bus.html — Senior-Friendly Bus ETA Page ─── */
+
+    /* Override body/layout to be full-width without sidebar/docs layout */
+    body {
+      background: var(--bg-primary, #FFFEF5);
+      color: var(--text-primary, #212121);
+      font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* Standalone page shell — no sidebar, no docs layout */
+    .wb-page {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Header bar (theme toggle + back link) ─── */
+    .wb-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .wb-back {
+      font-size: 18px;
+      color: var(--text-secondary, #64748b);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .wb-back:hover {
+      color: var(--accent-blue, #1565C0);
+    }
+
+    .wb-theme-btn {
+      background: none;
+      border: 2px solid var(--border, #e2e8f0);
+      border-radius: 8px;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 6px 12px;
+      color: var(--text-primary, #212121);
+      transition: background 0.2s;
+    }
+
+    .wb-theme-btn:hover {
+      background: var(--bg-hover, #f1f5f9);
+    }
+
+    /* ─── Hero Title ─── */
+    .wb-title {
+      font-size: clamp(32px, 8vw, 44px);
+      font-weight: 800;
+      text-align: center;
+      color: var(--accent-blue, #1565C0);
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+
+    .wb-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary, #64748b);
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    /* ─── Search Area ─── */
+    .wb-search-box {
+      background: var(--bg-card, #ffffff);
+      border: 2px solid var(--border, #e2e8f0);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0,0,0,0.07));
+    }
+
+    .wb-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary, #212121);
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .wb-input-wrap {
+      position: relative;
+    }
+
+    .wb-input {
+      width: 100%;
+      font-size: 20px;
+      padding: 16px 16px 16px 48px;
+      border: 2px solid var(--border, #e2e8f0);
+      border-radius: 12px;
+      background: var(--bg-primary, #FFFEF5);
+      color: var(--text-primary, #212121);
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+      min-height: 56px;
+    }
+
+    .wb-input::placeholder {
+      color: var(--text-tertiary, #94a3b8);
+      font-size: 18px;
+    }
+
+    .wb-input:focus {
+      border-color: var(--accent-blue, #1565C0);
+    }
+
+    .wb-input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 22px;
+      pointer-events: none;
+    }
+
+    /* Autocomplete dropdown */
+    .wb-suggestions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--bg-card, #ffffff);
+      border: 2px solid var(--accent-blue, #1565C0);
+      border-radius: 12px;
+      z-index: 100;
+      box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.08));
+      overflow: hidden;
+      display: none;
+    }
+
+    .wb-suggestions.show {
+      display: block;
+    }
+
+    .wb-suggestion-item {
+      padding: 14px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-light, #f1f5f9);
+      color: var(--text-primary, #212121);
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .wb-suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .wb-suggestion-item:hover,
+    .wb-suggestion-item.active {
+      background: var(--bg-active, #eff6ff);
+    }
+
+    .wb-suggestion-icon {
+      font-size: 20px;
+    }
+
+    /* Search button */
+    .wb-search-btn {
+      width: 100%;
+      min-height: 56px;
+      font-size: 22px;
+      font-weight: 700;
+      background: var(--accent-blue, #1565C0);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.5px;
+    }
+
+    .wb-search-btn:hover {
+      background: #0d47a1;
+      transform: translateY(-1px);
+    }
+
+    .wb-search-btn:active {
+      transform: translateY(0);
+    }
+
+    .wb-search-btn:disabled {
+      background: var(--text-tertiary, #94a3b8);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Route number filter (optional secondary input) */
+    .wb-route-filter {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .wb-route-filter-label {
+      font-size: 16px;
+      color: var(--text-secondary, #64748b);
+      white-space: nowrap;
+    }
+
+    .wb-route-input {
+      flex: 1;
+      font-size: 18px;
+      padding: 10px 12px;
+      border: 2px solid var(--border, #e2e8f0);
+      border-radius: 8px;
+      background: var(--bg-primary, #FFFEF5);
+      color: var(--text-primary, #212121);
+      outline: none;
+      min-height: 44px;
+    }
+
+    .wb-route-input:focus {
+      border-color: var(--accent-blue, #1565C0);
+    }
+
+    /* ─── Status Messages ─── */
+    .wb-msg {
+      text-align: center;
+      padding: 20px;
+      font-size: 18px;
+      color: var(--text-secondary, #64748b);
+      margin-bottom: 16px;
+      border-radius: 12px;
+      background: var(--bg-secondary, #f8fafc);
+    }
+
+    .wb-msg.loading {
+      color: var(--accent-blue, #1565C0);
+    }
+
+    .wb-msg.error {
+      color: var(--accent-red, #ef4444);
+      background: var(--accent-red-light, #fee2e2);
+    }
+
+    /* ─── Results Header ─── */
+    .wb-results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .wb-results-station {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary, #212121);
+    }
+
+    .wb-results-refresh {
+      font-size: 16px;
+      color: var(--accent-blue, #1565C0);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .wb-results-refresh:hover {
+      background: var(--bg-hover, #f1f5f9);
+    }
+
+    /* ─── Bus Cards ─── */
+    .wb-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .wb-card {
+      background: var(--bg-card, #ffffff);
+      border: 2px solid var(--border, #e2e8f0);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+      transition: border-color 0.2s;
+    }
+
+    .wb-card:hover {
+      border-color: var(--accent-blue, #1565C0);
+    }
+
+    .wb-card-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 64px;
+    }
+
+    .wb-route-badge {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent-blue, #1565C0);
+      background: var(--accent-blue-light, #dbeafe);
+      border-radius: 8px;
+      padding: 4px 8px;
+      text-align: center;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+
+    [data-theme="dark"] .wb-route-badge {
+      background: var(--accent-blue-light, #1e3a5f);
+      color: var(--accent-blue, #64B5F6);
+    }
+
+    .wb-direction-tag {
+      font-size: 12px;
+      color: var(--text-tertiary, #94a3b8);
+      margin-top: 2px;
+    }
+
+    .wb-card-mid {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .wb-destination {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary, #212121);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+
+    .wb-destination-sub {
+      font-size: 14px;
+      color: var(--text-secondary, #64748b);
+      margin-top: 2px;
+    }
+
+    .wb-card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      min-width: 70px;
+    }
+
+    .wb-eta {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .wb-eta.soon {
+      color: #d32f2f; /* 紅色：即將到站 */
+      animation: wb-pulse 1.5s ease-in-out infinite;
+    }
+
+    .wb-eta.very-soon {
+      color: #e53935;
+      animation: wb-pulse 1.5s ease-in-out infinite;
+    }
+
+    .wb-eta.short {
+      color: #f57c00;
+    }
+
+    .wb-eta.medium {
+      color: var(--accent-blue, #1565C0);
+    }
+
+    .wb-eta.long {
+      color: var(--text-secondary, #64748b);
+    }
+
+    @keyframes wb-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.65; }
+    }
+
+    .wb-eta-unit {
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .wb-eta-sec {
+      font-size: 13px;
+      color: var(--text-tertiary, #94a3b8);
+      font-weight: 400;
+    }
+
+    .wb-alarm-btn {
+      background: none;
+      border: 2px solid var(--border, #e2e8f0);
+      border-radius: 8px;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px 10px;
+      transition: background 0.2s, border-color 0.2s;
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wb-alarm-btn:hover {
+      background: var(--accent-orange-light, #ffedd5);
+      border-color: var(--accent-orange, #f97316);
+    }
+
+    .wb-alarm-btn.set {
+      background: var(--accent-green-light, #dcfce7);
+      border-color: var(--accent-green, #22c55e);
+    }
+
+    /* ─── Notification Hint Banner ─── */
+    .wb-hint {
+      background: var(--accent-yellow-light, #fef9c3);
+      border: 2px solid var(--accent-yellow, #eab308);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 16px;
+      color: #78350f;
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+
+    [data-theme="dark"] .wb-hint {
+      background: #2d2000;
+      border-color: #7a5c00;
+      color: #fde68a;
+    }
+
+    .wb-hint strong {
+      font-weight: 700;
+    }
+
+    /* ─── Alarm Modal ─── */
+    .wb-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .wb-modal-overlay.show {
+      display: flex;
+    }
+
+    .wb-modal {
+      background: var(--bg-card, #ffffff);
+      border-radius: 20px;
+      padding: 28px 24px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.1));
+    }
+
+    .wb-modal-icon {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+
+    .wb-modal-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary, #212121);
+      margin-bottom: 10px;
+    }
+
+    .wb-modal-body {
+      font-size: 17px;
+      color: var(--text-secondary, #64748b);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .wb-modal-body code {
+      background: var(--bg-code, #f1f5f9);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-family: var(--font-mono, monospace);
+      font-size: 15px;
+      color: var(--accent-blue, #1565C0);
+    }
+
+    .wb-modal-close {
+      min-height: 52px;
+      font-size: 18px;
+      font-weight: 700;
+      background: var(--accent-blue, #1565C0);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+
+    .wb-modal-close:hover {
+      background: #0d47a1;
+    }
+
+    /* ─── Footer ─── */
+    .wb-footer {
+      margin-top: auto;
+      padding-top: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-tertiary, #94a3b8);
+      line-height: 1.5;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 480px) {
+      .wb-page {
+        padding: 16px 12px 32px;
+      }
+
+      .wb-card {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .wb-card-right {
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .wb-eta {
+        font-size: 20px;
+      }
+    }
+
+    /* ─── Empty / No Data ─── */
+    .wb-empty {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-secondary, #64748b);
+    }
+
+    .wb-empty-icon {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+
+    .wb-empty-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary, #212121);
+      margin-bottom: 8px;
+    }
+
+    .wb-empty-desc {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* Route chips (quick-stop-select after picking a route) */
+    .wb-route-stops-prompt {
+      background: var(--bg-secondary, #f0f4ff);
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .wb-route-stops-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      color: var(--text-primary, #212121);
+    }
+    .wb-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .wb-chip {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      min-height: 48px;
+      transition: background 0.2s;
+    }
+    .wb-chip:hover { background: var(--primary-dark, #0d47a1); }
+    .wb-chip-active { background: #e53935 !important; color: #fff !important; border-color: #e53935 !important; }
+    .wb-chip-active:hover { background: #c62828 !important; }
+    .wb-chip-seq {
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      margin-right: 4px;
+    }
+
+    /* Bus tracker panel */
+    .wb-tracker-loading {
+      font-size: 20px;
+      color: var(--text-secondary, #555);
+      padding: 24px 0;
+      text-align: center;
+    }
+    .wb-tracker-header { margin-top: 0; }
+    .wb-tracker-route {
+      font-size: 24px;
+      margin-bottom: 14px;
+      color: var(--primary, #1565C0);
+    }
+    .wb-bus-panel {
+      background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    [data-theme="dark"] .wb-bus-panel { background: linear-gradient(135deg, #1b5e20, #2e7d32); }
+    .wb-bus-panel-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #2e7d32;
+    }
+    [data-theme="dark"] .wb-bus-panel-title { color: #81c784; }
+    .wb-bus-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    [data-theme="dark"] .wb-bus-row { background: rgba(255,255,255,0.08); }
+    .wb-bus-badge {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .wb-bus-loc { flex: 1; }
+    .wb-bus-where {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--text-primary, #212121);
+    }
+    .wb-bus-at-stop { color: #e53935; }
+    .wb-bus-next {
+      font-size: 14px;
+      color: var(--text-secondary, #555);
+      margin-top: 2px;
+    }
+    .wb-bus-eta-box {
+      background: #e53935;
+      color: #fff;
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      text-align: center;
+      min-width: 64px;
+    }
+    .wb-tracker-no-bus {
+      background: var(--bg-secondary, #f0f4ff);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      font-size: 18px;
+      color: var(--text-secondary, #555);
+      margin-bottom: 16px;
+    }
+    /* ── Direction tabs ── */
+    .wb-dir-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .wb-dir-tab {
+      background: var(--bg-secondary, #f0f4ff);
+      border: 2px solid var(--primary, #1565C0);
+      border-radius: 24px;
+      padding: 10px 22px;
+      font-size: 17px;
+      font-weight: bold;
+      color: var(--primary, #1565C0);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .wb-dir-tab-active {
+      background: var(--primary, #1565C0);
+      color: #fff;
+    }
+    [data-theme="dark"] .wb-dir-tab { border-color: var(--accent, #8b5cf6); color: var(--accent, #8b5cf6); }
+    [data-theme="dark"] .wb-dir-tab-active { background: var(--accent, #8b5cf6); color: #fff; }
+
+    /* ── Bus position rows ── */
+    .wb-sb-panel { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .wb-sb-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #e3f2fd, #f1f8e9);
+      border-radius: 16px;
+      padding: 14px 16px;
+      border: 2px solid #90caf9;
+    }
+    [data-theme="dark"] .wb-sb-row { background: linear-gradient(135deg, #0d47a1, #1b5e20); border-color: #1e88e5; }
+    .wb-sb-badge {
+      background: #e53935;
+      color: #fff;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 18px;
+      font-weight: bold;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .wb-sb-body { flex: 1; }
+    .wb-sb-where { font-size: 19px; font-weight: bold; color: var(--text-primary, #212121); margin-bottom: 4px; }
+    .wb-sb-next3 { display: flex; gap: 6px; flex-wrap: wrap; }
+    .wb-sb-eta-tag {
+      background: rgba(0,0,0,0.07);
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-size: 14px;
+      color: var(--text-secondary, #555);
+    }
+    .wb-sb-eta-tag b { color: #e53935; }
+    [data-theme="dark"] .wb-sb-eta-tag { background: rgba(255,255,255,0.1); color: #ccc; }
+    [data-theme="dark"] .wb-sb-eta-tag b { color: #ef9a9a; }
+    .wb-sb-left { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .wb-sb-plate {
+      background: #333;
+      color: #fff;
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+    [data-theme="dark"] .wb-sb-plate { background: #888; }
+    .wb-sb-right { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+    .wb-sb-countdown {
+      font-size: 26px;
+      font-weight: bold;
+      color: #1565C0;
+      text-align: center;
+      min-width: 56px;
+    }
+    .wb-sb-eta-btn {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .wb-sb-eta-btn:hover { background: var(--primary-dark, #0d47a1); }
+
+    /* ── Simulation controls ── */
+    .wb-sim-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .wb-sim-btn {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .wb-sim-btn:hover { opacity: 0.85; }
+    .wb-sim-btn-stop { background: #e53935; }
+    .wb-sim-note { font-size: 13px; color: var(--text-secondary, #888); }
+    [data-theme="dark"] .wb-sim-note { color: #aaa; }
+
+    /* ── Real-time bus ── */
+    .wb-sb-row-real { border-color: #43a047 !important; border-width: 2px !important; }
+    .wb-sb-badge-real { background: #43a047 !important; }
+    .wb-sb-seq { font-size: 13px; font-weight: normal; color: var(--text-secondary, #888); }
+    .wb-chip-next { background: #e3f2fd; color: #1565C0; font-size: 13px; padding: 2px 8px; border-radius: 10px; border: 1px solid #bbdefb; }
+    [data-theme="dark"] .wb-chip-next { background: #1a3a5c; color: #90caf9; border-color: #1e4976; }
+
+    /* ── Stop list ── */
+    .wb-slist-container {
+      height: 500px;
+      overflow-y: auto;
+      border: 2px solid var(--border-color, #ddd);
+      border-radius: 16px;
+      background: var(--bg-secondary, #f8f9fa);
+    }
+    [data-theme="dark"] .wb-slist-container { border-color: #333; background: #1a1a1a; }
+    .wb-slist-inner { padding: 8px; }
+    .wb-slist-dir { }
+    .wb-slist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 4px;
+      background: var(--bg-primary, #fff);
+      border: 1.5px solid transparent;
+      transition: background 0.2s;
+    }
+    [data-theme="dark"] .wb-slist-item { background: #1e1e1e; }
+    .wb-slist-item:hover { border-color: var(--primary, #1565C0); background: #e3f2fd; }
+    [data-theme="dark"] .wb-slist-item:hover { background: #1a3a6e; }
+    .wb-slist-bus-here {
+      background: #ffebee !important;
+      border-color: #e53935 !important;
+    }
+    [data-theme="dark"] .wb-slist-bus-here { background: #3a1a1a !important; border-color: #ef5350 !important; }
+    .wb-slist-left { display: flex; align-items: center; gap: 12px; }
+    .wb-slist-seq {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .wb-slist-name { font-size: 18px; font-weight: bold; color: var(--text-primary, #212121); }
+    .wb-slist-right { display: flex; align-items: center; gap: 8px; }
+    .wb-slist-bus-badge {
+      background: #e53935;
+      color: #fff;
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .wb-slist-btn {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 7px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      min-width: 60px;
+    }
+    .wb-slist-btn:hover { background: var(--primary-dark, #0d47a1); }
+    [data-theme="dark"] .wb-slist-btn { background: var(--accent, #8b5cf6); }
+    [data-theme="dark"] .wb-slist-btn:hover { background: #6d28d9; }
+    .wb-tracker-stops-title { font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: var(--text-secondary, #555);
+    }
+    .wb-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .wb-route-stops-hint {
+      margin-top: 12px;
+      font-size: 15px;
+      color: var(--text-secondary, #555);
+    }
+
+    /* Route suggestion icon */
+    .wb-suggestion-item .wb-suggestion-icon {
+      font-size: 20px;
+    }
+
+    /* ─── Large Quick-Search Modal ───────────────────────────── */
+    .wb-qs-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 20px 0;
+    }
+    .wb-qs-overlay.show { display: flex; }
+
+    .wb-qs-modal {
+      background: var(--bg-primary, #FFFEF5);
+      width: 100%;
+      max-width: 700px;
+      min-height: 90vh;
+      border-radius: 24px 24px 0 0;
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(60px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .wb-qs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      flex-shrink: 0;
+    }
+    .wb-qs-title {
+      font-size: 26px;
+      font-weight: bold;
+      color: var(--text-primary, #212121);
+    }
+    .wb-qs-close {
+      background: var(--bg-secondary, #f0f4ff);
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wb-qs-search {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      flex-shrink: 0;
+    }
+    .wb-qs-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 18px;
+      font-size: 20px;
+      border: 2px solid var(--primary, #1565C0);
+      border-radius: 14px;
+      background: var(--bg-primary, #FFFEF5);
+      color: var(--text-primary, #212121);
+      outline: none;
+    }
+
+    /* Category tabs */
+    .wb-qs-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      flex-shrink: 0;
+    }
+    .wb-qs-tab {
+      background: var(--bg-secondary, #f0f4ff);
+      border: 2px solid transparent;
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--text-primary, #212121);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .wb-qs-tab.active {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-color: var(--primary, #1565C0);
+    }
+    .wb-qs-tab:hover:not(.active) { border-color: var(--primary, #1565C0); }
+
+    .wb-qs-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px 32px;
+    }
+    .wb-qs-loading {
+      text-align: center;
+      font-size: 20px;
+      padding: 40px;
+      color: var(--text-secondary, #555);
+    }
+    .wb-qs-cat-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--text-secondary, #555);
+      margin: 16px 0 10px;
+      border-bottom: 2px solid var(--border-color, #e2e8f0);
+      padding-bottom: 4px;
+    }
+    .wb-qs-cat-title:first-child { margin-top: 0; }
+
+    .wb-qs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .wb-qs-route-btn {
+      background: var(--bg-secondary, #f0f4ff);
+      border: 2px solid var(--border-color, #e2e8f0);
+      border-radius: 14px;
+      padding: 12px 10px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--text-primary, #212121);
+      text-align: center;
+      transition: all 0.15s;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .wb-qs-route-btn:hover {
+      background: var(--primary, #1565C0);
+      color: #fff;
+      border-color: var(--primary, #1565C0);
+      transform: scale(1.04);
+    }
+    .wb-qs-route-btn .qs-route-name {
+      font-size: 22px;
+      font-weight: 900;
+    }
+    .wb-qs-route-btn .qs-route-sub {
+      font-size: 12px;
+      font-weight: 400;
+      opacity: 0.75;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    /* Route color badges */
+    .wb-qs-route-btn[data-color="紅"] { border-color: #ef4444; }
+    .wb-qs-route-btn[data-color="藍"] { border-color: #3b82f6; }
+    .wb-qs-route-btn[data-color="棕"] { border-color: #92400e; }
+    .wb-qs-route-btn[data-color="綠"] { border-color: #22c55e; }
+    .wb-qs-route-btn[data-color="黃"] { border-color: #eab308; }
+    .wb-qs-route-btn[data-color="橘"] { border-color: #f97316; }
+
+    [data-theme="dark"] .wb-qs-route-btn { background: #1a1a1a; border-color: #333; }
+    [data-theme="dark"] .wb-qs-tabs,
+    [data-theme="dark"] .wb-qs-header,
+    [data-theme="dark"] .wb-qs-search { background: #111; }
+    [data-theme="dark"] .wb-qs-modal { background: #111; }
+
+    /* ─── Quick-search trigger button ─── */
+    .wb-quick-btn {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #1565C0, #0d47a1);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .wb-quick-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(21,101,192,0.3); }
+    /* ─── Favorites ─── */
+    .wb-qs-favs { display: flex; flex-direction: column; gap: 8px; padding: 4px; }
+    .wb-fav-item { display: flex; align-items: center; gap: 8px; }
+    .wb-fav-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #fff8e1, #fff3e0);
+      border: 2px solid #ffc107;
+      border-radius: 14px;
+      padding: 14px 18px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    [data-theme="dark"] .wb-fav-btn { background: linear-gradient(135deg, #3e2723, #4e342e); border-color: #ff8f00; }
+    .wb-fav-name { font-size: 20px; font-weight: bold; color: #333; }
+    [data-theme="dark"] .wb-fav-name { color: #fff; }
+    .wb-fav-dest { font-size: 14px; color: #888; }
+    .wb-fav-del {
+      background: #ff5252; color: #fff; border: none;
+      border-radius: 50%; width: 32px; height: 32px;
+      font-size: 16px; cursor: pointer; flex-shrink: 0;
+    }
+    .wb-fav-del:hover { background: #d32f2f; }
+    .wb-qs-tab[data-tab*="收藏"] { color: #f57f17 !important; border-color: #f57f17 !important; }
+    .wb-qs-tab[data-tab*="收藏"].active { background: #f57f17 !important; color: #fff !important; }
+    .wb-fav-toggle {
+      background: #fff3e0; border: 2px solid #ffc107;
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 15px; cursor: pointer; color: #333;
+    }
+    .wb-fav-toggle-active { background: #ffc107 !important; color: #333 !important; font-weight: bold; }
+    [data-theme="dark"] .wb-fav-toggle { background: #3e2723; border-color: #ff8f00; color: #fff; }
+    [data-theme="dark"] .wb-fav-toggle-active { background: #ff8f00 !important; color: #fff !important; }
+    .wb-fav-toggle:hover { opacity: 0.8; }
+  </style>
+</head>
+<body>
+
+<div class="wb-page">
+
+  <!-- Top bar: back link + theme toggle -->
+  <div class="wb-topbar">
+    <a href="index.html" class="wb-back">← 返回文件</a>
+    <button class="wb-theme-btn" id="wbThemeBtn" aria-label="切換主題">🌙</button>
+  </div>
+
+  <!-- Title -->
+  <h1 class="wb-title">等公車 🚌</h1>
+  <p class="wb-subtitle">輸入站名或路線編號，馬上知道公車何時到</p>
+
+  <!-- Notification hint -->
+    <!-- Quick Search Modal trigger -->
+  <button class="wb-quick-btn" id="wbQuickBtn">🚌 快速查詢　全部公車路線</button>
+
+  <!-- Notification hint -->
+  <div class="wb-hint">
+    <strong>🔔 設定通知：</strong>點擊公車旁的鬧鐘圖示，然後傳訊息給 AI 助理說「幫我設定到站提醒」即可收到通知！
+  </div>
+
+  <!-- Search Box -->
+  <div class="wb-search-box">
+    <label class="wb-label" for="wbSearchInput">站名或路線</label>
+    <div class="wb-input-wrap">
+      <span class="wb-input-icon">🔍</span>
+      <input
+        id="wbSearchInput"
+        class="wb-input"
+        type="text"
+        placeholder="例如：捷運西門站、285、仁愛路"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+      <div class="wb-suggestions" id="wbSuggestions"></div>
+    </div>
+
+    <div class="wb-route-filter">
+      <span class="wb-route-filter-label">篩選路線</span>
+      <input
+        id="wbRouteFilter"
+        class="wb-route-input"
+        type="text"
+        placeholder="空白顯示全部"
+        autocomplete="off"
+      >
+    </div>
+
+    <button class="wb-search-btn" id="wbSearchBtn">查　詢</button>
+  </div>
+
+  <!-- Results area -->
+  <div id="wbResults">
+    <div class="wb-msg" style="display:none;"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="wb-footer">
+    資料來源：<a href="https://ptx.transportdata.tw/" target="_blank" style="color:var(--accent-blue);">PTX 臺灣公車動態開放平台</a><br>
+    &copy; 2026 Taipei Bus Skill · OpenClaw
+  </footer>
+</div>
+
+<!-- Alarm Modal -->
+  <!-- Quick-Search full-screen modal -->
+  <div class="wb-qs-overlay" id="wbQsOverlay">
+    <div class="wb-qs-modal" role="dialog" aria-modal="true" aria-label="快速查詢公車">
+      <div class="wb-qs-header">
+        <div class="wb-qs-title">🚌 全部公車路線</div>
+        <button class="wb-qs-close" id="wbQsClose">✕</button>
+      </div>
+      <div class="wb-qs-search">
+        <input class="wb-qs-search-input" id="wbQsSearchInput" type="text" placeholder="搜尋路線…" autocomplete="off" autocorrect="off">
+      </div>
+      <div class="wb-qs-tabs" id="wbQsTabs"></div>
+      <div class="wb-qs-content" id="wbQsContent">
+        <div class="wb-qs-loading" id="wbQsLoading">載入中…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Existing alarm/reminder modal -->
+  <div class="wb-modal-overlay" id="wbModalOverlay">
+  <div class="wb-modal" role="dialog" aria-modal="true" aria-labelledby="wbModalTitle">
+    <div class="wb-modal-icon" id="wbModalIcon">🔔</div>
+    <h2 class="wb-modal-title" id="wbModalTitle">已記下提醒！</h2>
+    <p class="wb-modal-body" id="wbModalBody">
+      請傳訊息給 AI 助理：<br>
+      <code>幫我設定到站提醒，&lt;公車&gt; 路公車，&lt;站名&gt;</code>
+    </p>
+    <button class="wb-modal-close" id="wbModalClose">了　解</button>
+  </div>
+</div>
+
+<script src="assets/js/main.js"></script>
+<script>
+/* ─── wait-bus.html — Bus ETA Logic ─── */
+(function () {
+  'use strict';
+
+  // ─── Theme init (mirror main.js logic) ───────────────────────
+  const STORAGE_KEY_THEME    = 'taipei-bus-docs-theme';
+  const FAV_KEY             = 'wb-favorites-v2';
+  function getFavs()  { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) { return []; } }
+  function saveFavs(arr)    { localStorage.setItem(FAV_KEY, JSON.stringify(arr)); }
+  function isFav(id)        { return getFavs().some(function(f){ return f.id === id; }); }
+  function addFav(routeId, routeUid, routeName, dest) {
+    var arr = getFavs();
+    if (arr.some(function(f){ return f.id === routeId; })) return;
+    arr.unshift({ id: routeId, uid: routeUid, name: routeName, dest: dest || '', addedAt: Date.now() });
+    saveFavs(arr);
+  }
+  function removeFav(id) {
+    saveFavs(getFavs().filter(function(f){ return f.id !== id; }));
+  }
+  function qsRenderFavs() {
+    var favs = getFavs();
+    if (favs.length === 0) {
+      qsContent.innerHTML = '<div class="wb-empty" style="margin-top:40px">' +
+        '<div class="wb-empty-icon">⭐</div><div class="wb-empty-title">還沒有收藏</div>' +
+        '<div class="wb-empty-desc">查看路線時，按「⭐ 收藏」加入</div></div>';
+      return;
+    }
+    qsContent.innerHTML = '<div class="wb-qs-favs">' + favs.map(function(f) {
+      return '<div class="wb-fav-item" data-id="' + escHtml(f.id) + '">' +
+        '<button class="wb-fav-btn" data-id="' + escHtml(f.id) + '" data-uid="' + escHtml(f.uid||f.id) + '" data-name="' + escHtml(f.name) + '">' +
+          '<span class="wb-fav-name">' + escHtml(f.name) + '</span>' +
+          (f.dest ? '<span class="wb-fav-dest">往 ' + escHtml(f.dest) + '</span>' : '') +
+        '</button>' +
+        '<button class="wb-fav-del" data-id="' + escHtml(f.id) + '" title="移除">✕</button>' +
+      '</div>';
+    }).join('') + '</div>';
+    qsContent.scrollTop = 0;
+    qsContent.querySelectorAll('.wb-fav-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        closeQuickSearch();
+        searchInput.value = btn.dataset.name;
+        selectedStop = { stopId:null, stopName:null, routeId:btn.dataset.id, routeName:btn.dataset.name, routeUid:btn.dataset.uid||btn.dataset.id };
+        fetchRouteStopsAndPrompt(btn.dataset.id, btn.dataset.name, btn.dataset.uid||btn.dataset.id);
+      });
+    });
+    qsContent.querySelectorAll('.wb-fav-del').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        removeFav(btn.dataset.id);
+        qsRenderFavs();
+        renderTabs();
+      });
+    });
+  }
+
+  function getTheme() {
+    const stored = localStorage.getItem(STORAGE_KEY_THEME);
+    if (stored) return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(STORAGE_KEY_THEME, theme);
+    document.getElementById('wbThemeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  applyTheme(getTheme());
+  document.getElementById('wbThemeBtn').addEventListener('click', function () {
+    applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+  });
+
+  // ─── DOM refs ───────────────────────────────────────────────
+  var searchInput = document.getElementById('wbSearchInput');
+  var suggestionsBox = document.getElementById('wbSuggestions');
+  var searchBtn = document.getElementById('wbSearchBtn');
+  var routeFilter = document.getElementById('wbRouteFilter');
+  var resultsDiv = document.getElementById('wbResults');
+  var modalOverlay = document.getElementById('wbModalOverlay');
+  var modalClose = document.getElementById('wbModalClose');
+  var modalTitle = document.getElementById('wbModalTitle');
+  var modalBody = document.getElementById('wbModalBody');
+  var modalIcon = document.getElementById('wbModalIcon');
+
+  var selectedStop = null; // { stopId, stopName }
+  var currentETAData = []; // raw ETA list
+  var debounceTimer = null;
+  var activeSuggestionIdx = -1;
+  var suggestionItems = [];
+
+  // ─── TDX API ─────────────────────────────────────────────────
+  // 即時到站 / GPS 定位（需 OAuth2 認證）
+  var TDX_CLIENT_ID     = '';
+  var TDX_CLIENT_SECRET = '';
+  var TDX_TOKEN         = null;
+  var TDX_TOKEN_EXP     = 0;
+  var TDX_API_BASE      = 'https://tdx.transportdata.tw/api/basic/v2';
+  var TDX_TOKEN_URL     = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token';
+
+  // 從 URL 注入：?tdx_id=xxx&tdx_secret=yyy
+  (function parseTdxFromUrl() {
+    try {
+      var params = new URLSearchParams(location.search);
+      var id  = params.get('tdx_id');
+      var sec = params.get('tdx_secret');
+      if (id && sec) { TDX_CLIENT_ID = id; TDX_CLIENT_SECRET = sec; }
+    } catch(e) {}
+  })();
+
+  function tdxHeaders() {
+    if (!TDX_TOKEN || Date.now() >= TDX_TOKEN_EXP - 60_000) return null;
+    return { Authorization: 'Bearer ' + TDX_TOKEN, Accept: 'application/json', 'User-Agent': 'taipei-bus-skill' };
+  }
+
+  async function tdxGetToken() {
+    if (!TDX_CLIENT_ID) return null;
+    if (TDX_TOKEN && Date.now() < TDX_TOKEN_EXP - 60_000) return TDX_TOKEN;
+    var body = 'grant_type=client_credentials&client_id=' + encodeURIComponent(TDX_CLIENT_ID) +
+               '&client_secret=' + encodeURIComponent(TDX_CLIENT_SECRET);
+    var res = await fetch(TDX_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'taipei-bus-skill' },
+      body: body
+    });
+    if (!res.ok) { TDX_TOKEN = null; return null; }
+    var tok = await res.json();
+    TDX_TOKEN = tok.access_token;
+    TDX_TOKEN_EXP = Date.now() + tok.expires_in * 1000;
+    return TDX_TOKEN;
+  }
+
+  async function tdxFetch(path) {
+    var h = tdxHeaders();
+    if (!h) return null;
+    var res = await fetch(TDX_API_BASE + path, { headers: h });
+    if (res.status === 401) { TDX_TOKEN = null; return null; }
+    if (!res.ok) return [];
+    return res.json().catch(function() { return []; });
+  }
+
+  async function tdxGetLiveBuses(routeUid, direction) {
+    var filters = ["RouteUID eq '" + routeUid + "'"];
+    if (direction !== undefined) filters.push('Direction eq ' + direction);
+    var q = '?$filter=' + encodeURIComponent(filters.join(' and '));
+    return await tdxFetch('/Bus/RealTimeNearStop/City/Taipei' + q) || [];
+  }
+
+  async function tdxGetETA(routeUid, direction) {
+    var filters = ["RouteUID eq '" + routeUid + "'"];
+    if (direction !== undefined) filters.push('Direction eq ' + direction);
+    var q = '?$filter=' + encodeURIComponent(filters.join(' and '));
+    return await tdxFetch('/Bus/EstimatedTimeOfArrival/City/Taipei' + q) || [];
+  }
+
+  function tdxFmtETA(sec) {
+    if (!sec && sec !== 0) return '—';
+    if (sec < 0) return '末班已過';
+    if (sec < 60) return sec + '秒';
+    var m = Math.floor(sec / 60), s = sec % 60;
+    if (m >= 60) {
+      var h = Math.floor(m / 60), mm = m % 60;
+      return s > 0 ? h + '小時' + mm + '分' : h + '小時' + mm + '分';
+    }
+    return s > 0 ? m + '分' + s + '秒' : m + '分';
+  }
+
+  if (TDX_CLIENT_ID) { tdxGetToken(); }
+
+  // ─── PTX fetch helper ────────────────────────────────────────
+  var PTX_BASE = 'https://ptx.transportdata.tw/MOTC/v2/Bus';
+  var PTX_HEADERS = {
+    'Accept': 'application/json',
+    'User-Agent': 'taipei-bus-skill'
+  };
+
+  function ptxFetch(url) {
+    return fetch(url, { headers: PTX_HEADERS })
+      .then(function (r) {
+        if (!r.ok) return []; // graceful: 400/500 → empty result
+        return r.json();
+      });
+  }
+
+  // Detect if keyword looks like a route number (pure digits or alphanum like "285", "212", "綠1")
+  function isRouteKeyword(kw) {
+    return /^\d+$/.test(kw) || /^[\d\w\u4e00-\u9fff]{1,6}$/.test(kw);
+  }
+
+  // ─── Route-first autocomplete (for route-number input) ─────
+  function searchRoutes(keyword) {
+    if (!keyword || keyword.length < 1) {
+      hideSuggestions();
+      return;
+    }
+    var encoded = encodeURIComponent(keyword);
+    // Search routes by route name (also check SubRouteName for variants)
+    var url = PTX_BASE + '/Route/City/Taipei?$filter=contains(RouteName%2C%27' + encoded + '%27)&$top=8&$format=JSON';
+    ptxFetch(url)
+      .then(function (data) {
+        if (!data || data.length === 0) {
+          // Fallback: try stop search
+          searchStations(keyword);
+          return;
+        }
+        renderRouteSuggestions(data);
+      })
+      .catch(function () {
+        hideSuggestions();
+      });
+  }
+
+  function renderRouteSuggestions(routes) {
+    if (!routes || routes.length === 0) {
+      hideSuggestions();
+      return;
+    }
+    suggestionItems = routes;
+    activeSuggestionIdx = -1;
+    suggestionsBox.innerHTML = routes.map(function (r, i) {
+      var name = (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || '');
+      var sub = '';
+      if (r.SubRoutes && r.SubRoutes.length > 0) {
+        var sub0 = r.SubRoutes[0];
+        sub = (sub0.SubRouteName && sub0.SubRouteName.Zh_tw) ? sub0.SubRouteName.Zh_tw : '';
+      }
+      return '<div class="wb-suggestion-item" data-idx="' + i + '">' +
+        '<span class="wb-suggestion-icon">🚍</span>' +
+        '<span><b>' + escHtml(name) + '</b>' + (sub && sub !== name ? ' / ' + escHtml(sub) : '') + '</span>' +
+        '</div>';
+    }).join('');
+    suggestionsBox.classList.add('show');
+    suggestionsBox.querySelectorAll('.wb-suggestion-item').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var idx = parseInt(el.dataset.idx, 10);
+        pickRouteSuggestion(idx);
+      });
+    });
+  }
+
+  function pickRouteSuggestion(idx) {
+    var route = suggestionItems[idx];
+    if (!route) return;
+    var name = (route.RouteName && route.RouteName.Zh_tw) ? route.RouteName.Zh_tw : (route.RouteName || '');
+    // Store selected route; user must pick a stop next
+    selectedStop = { stopId: null, stopName: null, routeId: route.RouteID, routeName: name };
+    searchInput.value = name;
+    hideSuggestions();
+    // Prompt user to pick a stop along this route
+    showMsg('請再輸入或選擇「' + escHtml(name) + '」的站名（如：西門、仁愛路）', '');
+  }
+
+  // ─── Station name autocomplete ──────────────────────────────
+  function searchStations(keyword) {
+    if (!keyword || keyword.length < 1) {
+      hideSuggestions();
+      return;
+    }
+    var encoded = encodeURIComponent(keyword);
+    var url = PTX_BASE + '/Stop/City/Taipei?$filter=contains(StopName%2C%27' + encoded + '%27)&$top=10&$format=JSON';
+    ptxFetch(url)
+      .then(function (data) {
+        renderSuggestions(data);
+      })
+      .catch(function () {
+        hideSuggestions();
+      });
+  }
+
+  function renderSuggestions(stops) {
+    if (!stops || stops.length === 0) {
+      hideSuggestions();
+      return;
+    }
+    suggestionItems = stops;
+    activeSuggestionIdx = -1;
+    suggestionsBox.innerHTML = stops.map(function (s, i) {
+      var name = (s.StopName && s.StopName.Zh_tw) ? s.StopName.Zh_tw : (s.StopName || '');
+      return '<div class="wb-suggestion-item" data-idx="' + i + '">' +
+        '<span class="wb-suggestion-icon">🚏</span>' +
+        '<span>' + escHtml(name) + '</span>' +
+        '</div>';
+    }).join('');
+    suggestionsBox.classList.add('show');
+
+    suggestionsBox.querySelectorAll('.wb-suggestion-item').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var idx = parseInt(el.dataset.idx, 10);
+        pickSuggestion(idx);
+      });
+    });
+  }
+
+  function hideSuggestions() {
+    suggestionsBox.classList.remove('show');
+    suggestionItems = [];
+    activeSuggestionIdx = -1;
+  }
+
+  function pickSuggestion(idx) {
+    var stop = suggestionItems[idx];
+    if (!stop) return;
+    var name = (stop.StopName && stop.StopName.Zh_tw) ? stop.StopName.Zh_tw : (stop.StopName || '');
+    selectedStop = { stopId: stop.StopID, stopName: name };
+    searchInput.value = name;
+    hideSuggestions();
+  }
+
+  // ─── ETA fetch ──────────────────────────────────────────────
+  function fetchETA(stopId) {
+    showMsg('載入中…', 'loading');
+    var url = PTX_BASE + '/EstimatedTimeOfArrival/City/Taipei?$filter=StopID%20eq%20%27' + stopId + '%27&$top=30&$format=JSON';
+    ptxFetch(url)
+      .then(function (data) {
+        currentETAData = data || [];
+        renderResults(currentETAData, selectedStop ? selectedStop.stopName : '');
+      })
+      .catch(function (err) {
+        showMsg('查詢失敗，請稍後再試。', 'error');
+        console.error('ETA fetch error:', err);
+      });
+  }
+
+  // ─── Route stops + realtime bus tracker ─────────────────────
+  // ─── Simulation state ─────────────────────────────────────────────
+  var simInterval  = null;
+  var simBuses     = [];
+  var simStopSeqs  = [];
+  var simStopsById = {};
+
+  function startSimulation(stopSeqs, stopsById) {
+    stopSimInterval();
+    simStopSeqs  = stopSeqs;
+    simStopsById = stopsById;
+    simBuses     = [];
+    var total    = stopSeqs.length;
+    for (var i = 0; i < 2; i++) {
+      simBuses.push({ pos: Math.floor(i * total / 2) });
+    }
+    renderSimStops();
+    simInterval = setInterval(advanceSim, 8000);
+  }
+
+  function stopSimInterval() {
+    if (simInterval)   { clearInterval(simInterval);   simInterval   = null; }
+    if (simCountdownInterval) { clearInterval(simCountdownInterval); simCountdownInterval = null; }
+  }
+
+  function advanceSim() {
+    simBuses.forEach(function (bus) {
+      bus.pos = (bus.pos + 1) % simStopSeqs.length;
+    });
+    renderSimStops();
+  }
+
+  function renderSimStops() {
+    simStopSeqs.forEach(function (sid, idx) {
+      var chip = document.querySelector('.wb-sim-chip[data-stop-id="' + sid + '"]');
+      if (chip) {
+        var hasBus = simBuses.some(function (b) { return b.pos === idx; });
+        chip.classList.toggle('wb-chip-active', hasBus);
+      }
+    });
+    var busRows = document.querySelectorAll('.wb-sim-bus-row');
+    simBuses.forEach(function (bus, i) {
+      var row = busRows[i];
+      if (!row) return;
+      var sid  = simStopSeqs[bus.pos];
+      var si   = simStopsById[sid] || {};
+      row.querySelector('.wb-sim-bus-where').textContent = '📍 ' + (si.name || sid);
+      row.querySelector('.wb-sim-bus-chip').textContent  = '🚏 ' + (si.name || sid);
+    });
+  }
+
+  // ─── Simulation state ─────────────────────────────────────────────
+  var simBuses      = {};   // { dir: [{pos, startMs}] }
+  var simStopSeqs   = {};   // { dir: [stopId] }
+  var simStopsById  = {};   // { dir: {stopId: info} }
+  var simInterval   = null;
+  var simCountdownInterval = null;
+  var SIM_MSPERSTOP  = 8000;
+  var simCurrentDir  = 0;
+  var SIM_PLATES     = ['FBB-123', 'FBC-567']; // simulated plates
+
+  function startSim(dir, stopSeqs, stopsById) {
+    stopSimInterval();
+    simCurrentDir   = dir;
+    simStopSeqs[dir]  = stopSeqs;
+    simStopsById[dir] = stopsById;
+    var total = stopSeqs.length;
+    simBuses[dir] = [];
+    for (var i = 0; i < 2; i++) {
+      simBuses[dir].push({ pos: Math.floor(i * total / 2), startMs: Date.now() });
+    }
+    renderSimBusRows();
+    renderSimStopList();
+    simInterval = setInterval(advanceSim, SIM_MSPERSTOP);
+    simCountdownInterval = setInterval(tickCountdown, 250);
+  }
+
+  function stopSimInterval() {
+    if (simInterval)   { clearInterval(simInterval);   simInterval   = null; }
+    if (simCountdownInterval) { clearInterval(simCountdownInterval); simCountdownInterval = null; }
+  }
+
+  function advanceSim() {
+    var dir   = simCurrentDir;
+    var buses = simBuses[dir] || [];
+    var seqs  = simStopSeqs[dir] || [];
+    if (!seqs.length) return;
+    buses.forEach(function (b) {
+      b.pos = (b.pos + 1) % seqs.length;
+      b.startMs = Date.now();
+    });
+    renderSimBusRows();
+    renderSimStopList();
+  }
+
+  // Live countdown: runs every 250ms
+  function tickCountdown() {
+    var dir   = simCurrentDir;
+    var buses = simBuses[dir] || [];
+    buses.forEach(function (bus, i) {
+      var row = document.getElementById('wb-sb-row-' + i);
+      if (!row) return;
+      var el  = document.getElementById('wb-sb-countdown-' + i);
+      if (!el) return;
+      var elapsed = Date.now() - bus.startMs;
+      var remaining = Math.max(0, SIM_MSPERSTOP - elapsed);
+      var secs = Math.ceil(remaining / 1000);
+      el.textContent = secs + '秒';
+      // Color: red if < 15s, orange < 30s
+      if (secs <= 0) {
+        el.textContent = '🚏 到站';
+        el.style.color = '#e53935';
+      } else if (secs <= 15) {
+        el.textContent = secs + '秒';
+        el.style.color = '#e53935';
+      } else if (secs <= 30) {
+        el.style.color = '#f57c00';
+      } else {
+        el.style.color = '#1565C0';
+      }
+    });
+  }
+
+  // Which stops does bus at position `pos` reach next?
+  function busNextStops(pos, dir, howMany) {
+    var seqs  = simStopSeqs[dir] || [];
+    var info   = simStopsById[dir] || {};
+    var result = [];
+    for (var i = 1; i <= howMany; i++) {
+      var idx  = (pos + i) % seqs.length;
+      var sid  = seqs[idx];
+      var si   = info[sid] || {};
+      result.push({ name: si.name || sid, seq: si.seq || idx + 1, etaMin: i });
+    }
+    return result;
+  }
+
+  function renderSimBusRows() {
+    var dir   = simCurrentDir;
+    var buses = simBuses[dir] || [];
+    var seqs  = simStopSeqs[dir] || [];
+    var info  = simStopsById[dir] || {};
+    buses.forEach(function (bus, i) {
+      var row = document.getElementById('wb-sb-row-' + i);
+      if (!row) return;
+      var sid  = seqs[bus.pos] || '';
+      var si   = info[sid] || {};
+      var plate = SIM_PLATES[i] || ('車' + (i+1));
+      row.querySelector('.wb-sb-plate').textContent = '🚍 ' + plate;
+      row.querySelector('.wb-sb-where').textContent = '📍 ' + (si.name || sid);
+      var next3 = busNextStops(bus.pos, dir, 3);
+      var etaHtml = next3.map(function (n) {
+        return '<span class="wb-sb-eta-tag">' + escHtml(n.name) + ' <b>' + n.etaMin + '分</b></span>';
+      }).join('');
+      row.querySelector('.wb-sb-next3').innerHTML = etaHtml || '<span class="wb-sb-eta-tag">末站</span>';
+    });
+  }
+
+  function renderSimStopList() {
+    var dir = simCurrentDir;
+    var seqs  = simStopSeqs[dir] || [];
+    var info   = simStopsById[dir] || {};
+    var buses  = simBuses[dir] || [];
+    seqs.forEach(function (sid) {
+      var li = document.querySelector('.wb-slist-item[data-sid="' + sid + '"]');
+      if (!li) return;
+      var hasBus = buses.some(function (b) { return seqs[b.pos] === sid; });
+      li.classList.toggle('wb-slist-bus-here', hasBus);
+      var badge = li.querySelector('.wb-slist-bus-badge');
+      if (badge) badge.style.display = hasBus ? '' : 'none';
+    });
+  }
+
+  // ─── Route stops: two-tab list view with simulated buses ────────────
+  function fetchRouteStopsAndPrompt(routeId, routeName, routeUid) {
+    stopSimInterval();
+    resultsDiv.innerHTML = '<div class="wb-route-stops-prompt">' +
+      '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b></div>' +
+      '<div class="wb-tracker-loading">📡 抓取站序資料中…</div></div>';
+
+    var uidOrId = routeUid || routeId;
+    ptxFetch(PTX_BASE + '/StopOfRoute/City/Taipei?$filter=RouteUID%20eq%20%27' + encodeURIComponent(uidOrId) + '%27&$top=500&$format=JSON')
+      .then(function (sorData) {
+        sorData = Array.isArray(sorData) ? sorData : [];
+        if (sorData.length === 0) {
+          showMsg('查無「' + escHtml(routeName) + '」站牌資料', 'error');
+          return;
+        }
+
+        // Separate by direction
+        var dirs = {}; // { dir: { stopSeqs:[], stopsById:{}, destName:'' } }
+        sorData.forEach(function (sr) {
+          var dir     = sr.Direction === 0 ? 0 : 1;
+          var dirName = dir === 0 ? '去程' : '返程';
+          var dest    = (sr.DestinationStopNameZh || '').replace('站', '');
+          if (!dirs[dir]) dirs[dir] = { stopSeqs: [], stopsById: {}, destName: dest, dirName: dirName };
+          (sr.Stops || []).forEach(function (s) {
+            var sid = s.StopID;
+            if (!dirs[dir].stopsById[sid]) {
+              dirs[dir].stopsById[sid] = {
+                seq:  s.StopSequence,
+                name: (s.StopName && s.StopName.Zh_tw) ? s.StopName.Zh_tw : (s.StopName || ''),
+                lat:  s.StopPosition ? s.StopPosition.PositionLat : null,
+                lon:  s.StopPosition ? s.StopPosition.PositionLon : null
+              };
+              dirs[dir].stopSeqs.push(sid);
+            }
+          });
+        });
+
+        // Sort each direction by sequence
+        Object.keys(dirs).forEach(function (d) {
+          dirs[d].stopSeqs.sort(function (a, b) {
+            return dirs[d].stopsById[a].seq - dirs[d].stopsById[b].seq;
+          });
+        });
+
+        var dirKeys = Object.keys(dirs).map(Number).sort();
+        var defaultDir = dirKeys[0] !== undefined ? dirKeys[0] : 0;
+
+        // ── HTML ──────────────────────────────────────────────────────
+        var html = '<div class="wb-route-stops-title">🚍 <b>' + escHtml(routeName) + '</b>　<button class="wb-fav-toggle" id="wbFavToggle" onclick="toggleFav(\'\')">⭐ 收藏</button></div>';
+
+        // Tab bar
+        html += '<div class="wb-dir-tabs" id="wbDirTabs">';
+        dirKeys.forEach(function (d) {
+          var dest = dirs[d].destName || (d === 0 ? '去程' : '返程');
+          html += '<button class="wb-dir-tab' + (d === defaultDir ? ' wb-dir-tab-active' : '') + '" data-dir="' + d + '">' +
+            (d === 0 ? '去程' : '返程') + ' → ' + escHtml(dest) + '</button>';
+        });
+        html += '</div>';
+
+        // ── Real-time bus data (async, non-blocking) ──────────────────
+        if (TDX_CLIENT_ID) {
+          tdxGetLiveBuses(routeUid, defaultDir).then(function(buses) {
+            if (buses && buses.length > 0) {
+              renderRealBusRows(buses, dirs[defaultDir].stopSeqs, dirs[defaultDir].stopsById, defaultDir, routeId, routeName, routeUid);
+            }
+          }).catch(function() {});
+          tdxGetETA(routeUid, defaultDir).then(function(eta) {
+            if (eta && eta.length > 0) { window._tdxETA = eta; }
+          }).catch(function() {});
+        }
+
+        // ── Bus position rows ────────────────────────────────────────
+        for (var bi = 0; bi < 2; bi++) {
+          html += '<div class="wb-sb-row" id="wb-sb-row-' + bi + '" data-real="false">' +
+            '<div class="wb-sb-left">' +
+              '<div class="wb-sb-badge">🚌 ' + (bi + 1) + '號車</div>' +
+              '<div class="wb-sb-plate">🚍 ' + (SIM_PLATES[bi] || ('車'+(bi+1))) + '</div>' +
+            '</div>' +
+            '<div class="wb-sb-body">' +
+              '<div class="wb-sb-where">📍 —</div>' +
+              '<div class="wb-sb-next3"></div>' +
+            '</div>' +
+            '<div class="wb-sb-right">' +
+              '<div class="wb-sb-countdown" id="wb-sb-countdown-' + bi + '">—</div>' +
+              '<button class="wb-sb-eta-btn" onclick="fetchETAForStop(\'' + routeId + '\',\'' + routeName + '\')">查此站</button>' +
+            '</div>' +
+            '</div>';
+        }
+
+        // ── Real bus renderer (called when TDX returns) ──────────────
+        window.renderRealBusRows = function(buses, stopSeqs, stopsById, dir, routeId, routeName, routeUid) {
+          if (!buses || buses.length === 0) return;
+          buses.slice(0, 2).forEach(function(bus, i) {
+            var row = document.getElementById('wb-sb-row-' + i);
+            if (!row) return;
+            row.setAttribute('data-real', 'true');
+            row.classList.add('wb-sb-row-real');
+            var plate    = bus.PlateNumb || '—';
+            var stopName = (bus.StopName && bus.StopName.Zh_tw) ? bus.StopName.Zh_tw : (bus.StopName || '—');
+            var stopSeq  = bus.StopSequence;
+            var etaRec   = (window._tdxETA || []).find(function(e) {
+              return e.StopID === bus.StopID && e.Direction === bus.Direction;
+            });
+            var etaSec = etaRec ? etaRec.EstimateTime : null;
+            var etaStr = tdxFmtETA(etaSec);
+            var statusBadge = '';
+            if (bus.A2EventType === 1)        statusBadge = '<span class="wb-sb-eta-tag wb-eta-red">🚏 到站</span>';
+            else if (etaSec !== null && etaSec !== undefined) statusBadge = '<span class="wb-sb-eta-tag wb-eta-orange">' + etaStr + '</span>';
+
+            var seqIdx = stopSeqs.indexOf(String(bus.StopID));
+            var next3 = '';
+            if (seqIdx >= 0) {
+              for (var ni = 1; ni <= 3; ni++) {
+                var nidx = seqIdx + ni;
+                if (nidx < stopSeqs.length) {
+                  var ns = stopsById[stopSeqs[nidx]];
+                  if (ns) next3 += '<span class="wb-chip wb-chip-next">' + ns.name + '</span>';
+                }
+              }
+            }
+
+            row.innerHTML = '<div class="wb-sb-left">' +
+              '<div class="wb-sb-badge wb-sb-badge-real">📡 實時</div>' +
+              '<div class="wb-sb-plate">🚍 ' + escHtml(plate) + '</div>' +
+            '</div>' +
+            '<div class="wb-sb-body">' +
+              '<div class="wb-sb-where">📍 ' + escHtml(stopName) + ' <span class="wb-sb-seq">第' + stopSeq + '站</span></div>' +
+              '<div class="wb-sb-next3">' + next3 + '</div>' +
+            '</div>' +
+            '<div class="wb-sb-right">' +
+              statusBadge +
+              '<button class="wb-sb-eta-btn" onclick="fetchETAForStop(\'' + routeId + '\',\'' + routeName + '\')">查此站</button>' +
+            '</div>';
+          });
+          var simNote = document.querySelector('.wb-sim-note');
+          if (simNote) simNote.textContent = '📡 實時車機資料（TDX）';
+        };
+
+        // ── Simulation controls ──────────────────────────────────────
+        var simNoteText = TDX_CLIENT_ID
+          ? '<span class="wb-sim-note">📡 即時定位（自動抓取中）…</span>'
+          : '<span class="wb-sim-note">⚠️ 班距推算，非實際車機</span>';
+        html += '<div class="wb-sim-controls">' +
+          '<button class="wb-sim-btn" id="wbSimStart">▶ 播放</button>' +
+          '<button class="wb-sim-btn wb-sim-btn-stop" id="wbSimStop">⏸ 暫停</button>' +
+          '<button class="wb-sim-btn" id="wbRefreshLive" title="重新抓取實時車機">🔄</button>' +
+          simNoteText +
+          '</div>';
+
+        // ── Stop list (500px height, scrollable) ───────────────────
+        html += '<div class="wb-slist-container" id="wbSlist"><div class="wb-slist-inner">';
+        dirKeys.forEach(function (d) {
+          html += '<div class="wb-slist-dir" id="wbSlistDir' + d + '" style="display:' + (d === defaultDir ? 'block' : 'none') + '">';
+          dirs[d].stopSeqs.forEach(function (sid) {
+            var si = dirs[d].stopsById[sid];
+            html += '<div class="wb-slist-item" data-sid="' + sid + '" data-dir="' + d + '">' +
+              '<div class="wb-slist-left">' +
+                '<span class="wb-slist-seq">' + si.seq + '</span>' +
+                '<span class="wb-slist-name">' + escHtml(si.name) + '</span>' +
+              '</div>' +
+              '<div class="wb-slist-right">' +
+                '<span class="wb-slist-bus-badge wb-bus-badge" style="display:none">🚌 在站</span>' +
+                '<button class="wb-slist-btn" data-sid="' + sid + '" data-sname="' + escHtml(si.name) + '">ETA</button>' +
+              '</div>' +
+            '</div>';
+          });
+          html += '</div>'; // wb-slist-dir
+        });
+        html += '</div></div>'; // wb-slist-container, inner
+
+        resultsDiv.innerHTML = html;
+
+        // Update fav button state
+        if (document.getElementById('wbFavToggle')) {
+          toggleFav(routeId); // sync star state
+        }
+
+        // ── Wire tabs ──────────────────────────────────────────────
+        document.getElementById('wbDirTabs').addEventListener('click', function (e) {
+          var tab = e.target.closest('.wb-dir-tab');
+          if (!tab) return;
+          var newDir = parseInt(tab.dataset.dir, 10);
+          document.querySelectorAll('.wb-dir-tab').forEach(function (t) { t.classList.remove('wb-dir-tab-active'); });
+          tab.classList.add('wb-dir-tab-active');
+          document.querySelectorAll('.wb-slist-dir').forEach(function (d) { d.style.display = 'none'; });
+          document.getElementById('wbSlistDir' + newDir).style.display = 'block';
+          stopSimInterval();
+          renderSimStopList(); // re-render with new dir's data
+        });
+
+        // ── Wire sim controls ───────────────────────────────────────
+        document.getElementById('wbSimStart').addEventListener('click', function () {
+          var activeDir = parseInt(document.querySelector('.wb-dir-tab-active').dataset.dir, 10);
+          startSim(activeDir, dirs[activeDir].stopSeqs, dirs[activeDir].stopsById);
+        });
+        document.getElementById('wbSimStop').addEventListener('click', stopSimInterval);
+
+        document.getElementById('wbRefreshLive').addEventListener('click', function() {
+          if (!TDX_CLIENT_ID) { showMsg('請在網址列加入 ?tdx_id=…&tdx_secret=…', 'info'); return; }
+          var activeDir = parseInt(document.querySelector('.wb-dir-tab-active').dataset.dir, 10);
+          this.textContent = '⏳';
+          var self = this;
+          tdxGetLiveBuses(routeUid, activeDir).then(function(buses) {
+            self.textContent = '🔄';
+            if (buses && buses.length > 0) {
+              renderRealBusRows(buses, dirs[activeDir].stopSeqs, dirs[activeDir].stopsById, activeDir, routeId, routeName, routeUid);
+            } else {
+              showMsg('目前無即時車機資料（可能已收班）', 'info');
+            }
+          }).catch(function() { self.textContent = '🔄'; showMsg('抓取失敗，請稍後再試', 'error'); });
+        });
+
+        // ── Wire stop ETA buttons ───────────────────────────────────
+        resultsDiv.querySelectorAll('.wb-slist-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var sid  = btn.dataset.sid;
+            var sname = btn.dataset.sname;
+            selectedStop = { stopId: sid, stopName: sname, routeId: routeId, routeName: routeName, routeUid: routeUid };
+            searchInput.value = sname;
+            fetchETA(sid);
+          });
+        });
+      })
+      .catch(function (err) {
+        showMsg('查詢站牌失敗，請稍後再試', 'error');
+        console.error(err);
+      });
+  }
+
+  // Global helper called from inline onclick
+  function fetchETAForStop(routeId, routeName) {
+    var activeDir = parseInt(document.querySelector('.wb-dir-tab-active').dataset.dir, 10);
+    var seqs = simStopSeqs[activeDir] || [];
+    var info = simStopsById[activeDir] || {};
+    // Find first bus position
+    var buses = simBuses[activeDir] || [];
+    if (!buses.length) return;
+    var busPos = buses[0].pos;
+    var sid = seqs[busPos];
+    var si  = info[sid] || {};
+    selectedStop = { stopId: sid, stopName: si.name || sid, routeId: routeId, routeName: routeName };
+    searchInput.value = si.name || sid;
+    fetchETA(sid);
+  }
+
+  // ─── Render results ─────────────────────────────────────────
+  function renderResults(data, stopName) {
+    // Filter by route if set
+    var routeKw = (routeFilter.value || '').trim();
+    var filtered = routeKw
+      ? data.filter(function (d) {
+          var rn = (d.RouteName && d.RouteName.Zh_tw) ? d.RouteName.Zh_tw : (d.RouteName || '');
+          return rn.indexOf(routeKw) !== -1;
+        })
+      : data;
+
+    if (filtered.length === 0) {
+      resultsDiv.innerHTML = '<div class="wb-empty">' +
+        '<div class="wb-empty-icon">🚌</div>' +
+        '<div class="wb-empty-title">目前無公車資料</div>' +
+        '<div class="wb-empty-desc">' +
+        (routeKw ? '路線「' + escHtml(routeKw) + '」目前無到站資料<br>試著移除路線篩選' : '此站目前無公車到站資訊') +
+        '</div></div>';
+      return;
+    }
+
+    // Sort: EstimateArriveTime ASC (nulls last)
+    filtered.sort(function (a, b) {
+      var ta = a.EstimateArriveTime != null ? a.EstimateArriveTime : 999999;
+      var tb = b.EstimateArriveTime != null ? b.EstimateArriveTime : 999999;
+      return ta - tb;
+    });
+
+    var html = '<div class="wb-results-header">' +
+      '<span class="wb-results-station">🚏 ' + escHtml(stopName || '查詢結果') + '</span>' +
+      '<button class="wb-results-refresh" id="wbRefreshBtn">🔄 重新整理</button>' +
+      '</div>' +
+      '<div class="wb-cards">';
+
+    filtered.forEach(function (d, i) {
+      var routeName = (d.RouteName && d.RouteName.Zh_tw) ? d.RouteName.Zh_tw : (d.RouteName || '?');
+      var subRouteName = (d.SubRouteName && d.SubRouteName.Zh_tw) ? d.SubRouteName.Zh_tw : '';
+      var direction = d.Direction; // 0=去程, 1=返程
+      var destStopID = d.DestinationStopID || '';
+      var etaSec = d.EstimateArriveTime;
+      var etaDisplay = formatETA(etaSec);
+      var etaClass = getETAClass(etaSec);
+      var directionLabel = direction === 0 ? '去程' : (direction === 1 ? '返程' : '');
+
+      html += '<div class="wb-card" data-route="' + escHtml(routeName) + '" data-stop="' + escHtml(stopName) + '">' +
+        '<div class="wb-card-left">' +
+        '<div class="wb-route-badge">' + escHtml(routeName) + '</div>' +
+        (directionLabel ? '<div class="wb-direction-tag">' + directionLabel + '</div>' : '') +
+        '</div>' +
+        '<div class="wb-card-mid">' +
+        '<div class="wb-destination">' + escHtml(subRouteName || routeName) + '</div>' +
+        '<div class="wb-destination-sub">' + escHtml(direction === 0 ? '往市區方向' : (direction === 1 ? '往反向' : '')) + '</div>' +
+        '</div>' +
+        '<div class="wb-card-right">' +
+        '<div class="wb-eta ' + etaClass + '">' + etaDisplay + '</div>' +
+        '<button class="wb-alarm-btn" title="設定到站提醒" ' +
+        'data-route="' + escHtml(routeName) + '" ' +
+        'data-stop="' + escHtml(stopName) + '" ' +
+        'data-eta="' + (etaSec != null ? Math.round(etaSec / 60) : '') + '">' +
+        '🔔</button>' +
+        '</div></div>';
+    });
+
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+
+    // Bind refresh
+    document.getElementById('wbRefreshBtn').addEventListener('click', function () {
+      if (selectedStop) fetchETA(selectedStop.stopId);
+    });
+
+    // Bind alarm buttons
+    resultsDiv.querySelectorAll('.wb-alarm-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var route = btn.dataset.route;
+        var stop = btn.dataset.stop;
+        var etaMin = parseInt(btn.dataset.eta, 10) || 5;
+        openAlarmModal(route, stop, etaMin);
+        btn.classList.add('set');
+        btn.textContent = '✓';
+      });
+    });
+  }
+
+  // ─── ETA formatting ────────────────────────────────────────
+  function formatETA(sec) {
+    if (sec == null) return '無資料';
+    if (sec < 30) return '馬上到！';
+    if (sec < 60) return '1 分鐘內';
+    var mins = Math.round(sec / 60);
+    return mins + ' 分鐘';
+  }
+
+  function getETAClass(sec) {
+    if (sec == null) return 'long';
+    if (sec < 60) return 'soon';
+    if (sec < 180) return 'very-soon';
+    if (sec < 600) return 'short';
+    if (sec < 1200) return 'medium';
+    return 'long';
+  }
+
+  // ─── Status messages ────────────────────────────────────────
+  function showMsg(text, cls) {
+    var el = resultsDiv.querySelector('.wb-msg');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'wb-msg';
+      resultsDiv.insertBefore(el, resultsDiv.firstChild);
+    }
+    el.className = 'wb-msg' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+    el.style.display = 'block';
+  }
+
+  // ─── Alarm Modal ────────────────────────────────────────────
+  function openAlarmModal(route, stop, etaMin) {
+    modalIcon.textContent = '🔔';
+    modalTitle.textContent = '已記下提醒！';
+    modalBody.innerHTML =
+      '請傳訊息給 AI 助理：<br><br>' +
+      '<code>幫我設定到站提醒，「' + escHtml(route) + '」公車在「' + escHtml(stop) + '」站，到站前 ' + etaMin + ' 分鐘通知我</code>';
+    modalOverlay.classList.add('show');
+  }
+
+  modalClose.addEventListener('click', function () {
+    modalOverlay.classList.remove('show');
+  });
+
+  modalOverlay.addEventListener('click', function (e) {
+    if (e.target === modalOverlay) modalOverlay.classList.remove('show');
+  });
+
+  // ─── Utility ────────────────────────────────────────────────
+  function escHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ─── Event: input → debounced autocomplete ──────────────────
+  searchInput.addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function () {
+      var kw = searchInput.value.trim();
+      if (!kw) { hideSuggestions(); return; }
+      var isRouteNum = /^\d+$/.test(kw) || /^[\d]+[\w\u4e00-\u9fff]{0,4}$/.test(kw);
+      if (isRouteNum && kw.length <= 6) {
+        searchRoutes(kw);        // numeric input → search routes first
+      } else {
+        searchStations(kw);      // name input → search stops
+      }
+    }, 300);
+  });
+
+  // Keyboard navigation for suggestions
+  searchInput.addEventListener('keydown', function (e) {
+    var items = suggestionsBox.querySelectorAll('.wb-suggestion-item');
+    if (!suggestionsBox.classList.contains('show') || items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeSuggestionIdx = Math.min(activeSuggestionIdx + 1, items.length - 1);
+      updateActiveSuggestion(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeSuggestionIdx = Math.max(activeSuggestionIdx - 1, 0);
+      updateActiveSuggestion(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeSuggestionIdx >= 0) {
+        pickSuggestion(activeSuggestionIdx);
+      } else {
+        doSearch();
+      }
+    } else if (e.key === 'Escape') {
+      hideSuggestions();
+    }
+  });
+
+  function updateActiveSuggestion(items) {
+    items.forEach(function (el, i) {
+      el.classList.toggle('active', i === activeSuggestionIdx);
+    });
+    if (activeSuggestionIdx >= 0 && items[activeSuggestionIdx]) {
+      items[activeSuggestionIdx].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // Click outside to dismiss suggestions
+  document.addEventListener('click', function (e) {
+    if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+      hideSuggestions();
+    }
+  });
+
+  // ─── Route filter: re-render on change ─────────────────────
+  routeFilter.addEventListener('input', function () {
+    if (currentETAData.length > 0) {
+      renderResults(currentETAData, selectedStop ? selectedStop.stopName : '');
+    }
+  });
+
+  // ─── Main search action ─────────────────────────────────────
+  function doSearch() {
+    hideSuggestions();
+    var keyword = searchInput.value.trim();
+
+    if (!keyword) {
+      showMsg('請輸入站名或路線名稱', '');
+      return;
+    }
+
+    // If user picked a route (no stop yet), fetch route stops
+    if (selectedStop && !selectedStop.stopId && selectedStop.routeId) {
+      fetchRouteStopsAndPrompt(selectedStop.routeId, selectedStop.routeName, selectedStop.routeUid);
+      return;
+    }
+
+    // If user picked a stop from suggestions
+    if (selectedStop && selectedStop.stopId) {
+      fetchETA(selectedStop.stopId);
+      return;
+    }
+
+    // Otherwise: keyword search — try stop first, then route
+    searchBtn.disabled = true;
+    searchBtn.textContent = '查詢中…';
+    showMsg('搜尋站牌中…', 'loading');
+
+    var encoded = encodeURIComponent(keyword);
+    var stopUrl = PTX_BASE + '/Stop/City/Taipei?$filter=contains(StopName%2C%27' + encoded + '%27)&$top=1&$format=JSON';
+    ptxFetch(stopUrl)
+      .then(function (data) {
+        if (data && data.length > 0) {
+          searchBtn.disabled = false;
+          searchBtn.textContent = '查　詢';
+          var stop = data[0];
+          var name = (stop.StopName && stop.StopName.Zh_tw) ? stop.StopName.Zh_tw : (stop.StopName || keyword);
+          selectedStop = { stopId: stop.StopID, stopName: name };
+          searchInput.value = name;
+          fetchETA(stop.StopID);
+        } else {
+          // No stop found — try as route
+          var routeUrl = PTX_BASE + '/Route/City/Taipei?$filter=contains(RouteName%2C%27' + encoded + '%27)&$top=5&$format=JSON';
+          return ptxFetch(routeUrl);
+        }
+      })
+      .then(function (routeData) {
+        searchBtn.disabled = false;
+        searchBtn.textContent = '查　詢';
+        if (routeData && routeData.length > 0) {
+          // Use first route result — fetch its stops and show as chips
+          var r = routeData[0];
+          var rn = (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || keyword);
+          var rid = r.RouteID || keyword;
+          fetchRouteStopsAndPrompt(rid, rn, btn.dataset.uid || rid);
+        } else {
+          showMsg('找不到「' + escHtml(keyword) + '」，請確認站名或路線是否正確', 'error');
+        }
+      })
+      .catch(function (err) {
+        searchBtn.disabled = false;
+        searchBtn.textContent = '查　詢';
+        showMsg('查詢失敗，請稍後再試。', 'error');
+        console.error('Search error:', err);
+      });
+  }
+
+  searchBtn.addEventListener('click', doSearch);
+
+  // ─── Quick-Search Modal ───────────────────────────────────
+  var qsOverlay  = document.getElementById('wbQsOverlay');
+  var qsContent  = document.getElementById('wbQsContent');
+  var qsTabs     = document.getElementById('wbQsTabs');
+  var qsSearchIn = document.getElementById('wbQsSearchInput');
+  var qsLoading  = document.getElementById('wbQsLoading');
+
+  var allRoutes = [];      // full list from PTX
+  var qsCache   = null;    // { cat: [routes], other: [routes] }
+  var qsActiveTab = '全部';
+  var qsDebounce  = null;
+
+  document.getElementById('wbQuickBtn').addEventListener('click', openQuickSearch);
+  document.getElementById('wbQsClose').addEventListener('click', closeQuickSearch);
+  qsOverlay.addEventListener('click', function (e) {
+    if (e.target === qsOverlay) closeQuickSearch();
+  });
+  qsSearchIn.addEventListener('input', function () {
+    clearTimeout(qsDebounce);
+    qsDebounce = setTimeout(renderQuickSearch, 200);
+  });
+
+  function openQuickSearch() {
+    renderTabs();  // refresh fav count
+    qsOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    if (!qsCache) {
+      loadAllRoutes();
+    } else {
+      renderTabs();
+      renderQuickSearch();
+    }
+  }
+
+  function closeQuickSearch() {
+    qsOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+    qsSearchIn.value = '';
+  }
+
+  function loadAllRoutes() {
+    qsLoading.style.display = 'block';
+    qsLoading.textContent = '載入全部公車路線…';
+    qsContent.innerHTML = '';
+    qsContent.appendChild(qsLoading);
+    qsContent.scrollTop = 0;
+    qsTabs.innerHTML = '';
+    var url = PTX_BASE + '/Route/City/Taipei?$top=500&$format=JSON';
+    ptxFetch(url)
+      .then(function (data) {
+        allRoutes = (data || []).map(function (r) {
+          return {
+            id:   r.RouteID   || '',
+            uid:  r.RouteUID  || r.RouteID || '',
+            name: (r.RouteName && r.RouteName.Zh_tw) ? r.RouteName.Zh_tw : (r.RouteName || ''),
+            dept: (r.DepartureStopNameZh || '').replace('站', ''),
+            dest: (r.DestinationStopNameZh || '').replace('站', '')
+          };
+        });
+        // Classify by first character
+        var cats = { '全部': allRoutes, '紅': [], '藍': [], '棕': [], '綠': [], '黃': [], '橘': [] };
+        allRoutes.forEach(function (r) {
+          var first = r.name.charAt(0);
+          if (/^[藍棕紅綠橘黃]$/.test(first)) cats[first].push(r);
+          else cats['全部'].push(r);
+        });
+        // Remove empty categories from tabs
+        qsCache = cats;
+        renderTabs();
+        renderQuickSearch();
+        qsLoading.style.display = 'none';
+      })
+      .catch(function () {
+        qsLoading.textContent = '載入失敗，請關閉後重試';
+      });
+  }
+
+  function renderTabs() {
+    var favs = getFavs();
+    var tabs = ['⭐ 收藏' + (favs.length ? ' (' + favs.length + ')' : '')];
+    tabs = tabs.concat(Object.keys(qsCache || {}).filter(function (k) {
+      return k === '全部' || qsCache[k].length > 0;
+    }));
+    qsTabs.innerHTML = tabs.map(function (k) {
+      return '<button class="wb-qs-tab' + (k === qsActiveTab ? ' active' : '') + '" data-tab="' + k + '">' +
+        k + (k !== '全部' ? ' (' + ((qsCache || {})[k] || []).length + ')' : ' (' + (allRoutes || []).length + ')') +
+        '</button>';
+    }).join('');
+    qsTabs.querySelectorAll('.wb-qs-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        qsActiveTab = btn.dataset.tab;
+        qsTabs.querySelectorAll('.wb-qs-tab').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        if (qsActiveTab.indexOf('收藏') !== -1) { qsRenderFavs(); } else { renderQuickSearch(); }
+      });
+    });
+  }
+
+  function renderQuickSearch() {
+    var kw = (qsSearchIn.value || '').trim();
+    var src = (qsActiveTab === '全部' ? (allRoutes || []) : (qsCache || {})[qsActiveTab]) || [];
+    var list = kw
+      ? (src || []).filter(function (r) {
+          return r.name.indexOf(kw) !== -1 || r.dept.indexOf(kw) !== -1 || r.dest.indexOf(kw) !== -1;
+        })
+      : src;
+
+    if (list.length === 0) {
+      qsContent.innerHTML = '<div class="wb-empty" style="margin-top:40px">' +
+        '<div class="wb-empty-icon">🔍</div>' +
+        '<div class="wb-empty-title">查無符合路線</div>' +
+        '<div class="wb-empty-desc">試著換個關鍵字</div></div>';
+      return;
+    }
+
+    var html = '<div class="wb-qs-grid">' + list.map(function (r) {
+      var first = r.name.charAt(0);
+      var color = /^[藍棕紅綠橘黃]$/.test(first) ? first : '';
+      return '<button class="wb-qs-route-btn" data-color="' + escHtml(color) + '" data-id="' + escHtml(r.id) + '" data-uid="' + escHtml(r.uid || r.id) + '" data-name="' + escHtml(r.name) + '">' +
+        '<span class="qs-route-name">' + escHtml(r.name) + '</span>' +
+        (r.dest ? '<span class="qs-route-sub">往' + escHtml(r.dest) + '</span>' : '') +
+        '</button>';
+    }).join('') + '</div>';
+
+    qsContent.innerHTML = html;
+    qsContent.scrollTop = 0;
+
+    qsContent.querySelectorAll('.wb-qs-route-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var rid  = btn.dataset.id;
+        var rname = btn.dataset.name;
+        closeQuickSearch();
+        searchInput.value = rname;
+        selectedStop = { stopId: null, stopName: null, routeId: rid, routeName: rname, routeUid: btn.dataset.uid || rid };
+        fetchRouteStopsAndPrompt(rid, rname, btn.dataset.uid || rid);
+      });
+    });
+  }
+
+  // Global: toggle favorite for current route
+  function toggleFav(routeId) {
+    var id   = routeId || (selectedStop && selectedStop.routeId) || '';
+    var uid  = selectedStop && selectedStop.routeUid || id;
+    var name = selectedStop && selectedStop.routeName || '';
+    // get destination from current tab
+    var activeTab = document.querySelector('.wb-dir-tab-active');
+    var dest = activeTab ? activeTab.textContent.replace('→','').trim() : '';
+    if (isFav(id)) {
+      removeFav(id);
+    } else {
+      addFav(id, uid, name, dest);
+    }
+    var btn = document.getElementById('wbFavToggle');
+    if (btn) {
+      btn.textContent = isFav(id) ? '★ 已收藏' : '☆ 收藏';
+      btn.classList.toggle('wb-fav-toggle-active', isFav(id));
+    }
+  }
+  window.toggleFav = toggleFav;
+  window.fetchETAForStop = fetchETAForStop;
+
+})();
+</script>
+</body>
+</html>
