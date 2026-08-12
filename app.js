@@ -226,8 +226,8 @@
             ${catLabel}
           </span>
           <div class="skill-card-actions">
-            <button class="skill-install-btn" data-id="${skill.id}">
-              ⚡ ${t('modal.install')}
+            <button class="skill-install-btn ${!skill.clawhubUrl && !skill.siteUrl ? 'is-disabled' : ''}" data-id="${skill.id}" ${!skill.clawhubUrl && !skill.siteUrl ? 'disabled' : ''}>
+              ${skill.clawhubUrl ? `⚡ ${t('modal.install')}` : skill.siteUrl ? `🌐 ${t('modal.site')}` : t('noInstall')}
             </button>
             <button class="skill-detail-btn" data-id="${skill.id}">
               ${t('modal.detail')} →
@@ -254,6 +254,8 @@
         const skill = SKILLS.find(s => s.id === btn.dataset.id);
         if (skill?.clawhubUrl) {
           window.open(skill.clawhubUrl, '_blank');
+        } else if (skill?.siteUrl) {
+          window.open(skill.siteUrl, '_blank');
         }
       });
     });
