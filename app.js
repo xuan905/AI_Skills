@@ -238,6 +238,11 @@
     `;
   }
 
+  function getSkillsByCategory(cat) {
+    if (cat === 'all') return SKILLS;
+    return SKILLS.filter(s => s.category === cat);
+  }
+
   function renderSkills() {
     const filtered = getSkillsByCategory(currentCat);
     skillsGrid.innerHTML = filtered.map(skillCardHTML).join('');
