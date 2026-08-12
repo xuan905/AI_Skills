@@ -1333,10 +1333,13 @@ cron(action='add', job={
             <div class="limitation-item">
               <div class="limitation-num">3</div>
               <div class="limitation-content">
-                <div class="limitation-title">即時資料僅涵蓋部分車機車輛</div>
+                <div class="limitation-title">即時定位需要 TDX API 帳號</div>
                 <div class="limitation-desc">
-                  TstBusEvent API 只包含有安裝定點車機設備的公車，<strong>非全部營運車輛</strong>。
-                  無車機的車輛不會出現在查詢結果中，不代表它不存在或未發車。
+                  PTX 免費公開端點不提供即時公車 GPS 與 ETA 資料。
+                  若要顯示真實車機定位，請至 <a href="https://tdx.transportdata.tw/" target="_blank">TDX 交通資料平台</a> 註冊免費帳號，
+                  將 <code>client_id</code> 與 <code>client_secret</code> 加入網址參數即可：<br>
+                  <code>wait-bus.html?tdx_id=你的ID&tdx_secret=你的密鑰</code>
+                  <br>無帳號時自動降級為模擬推算模式（紫色標語提醒）。
                 </div>
               </div>
             </div>
@@ -1372,6 +1375,25 @@ cron(action='add', job={
                   PTX 站牌座標與路線站序快取（<code>data/</code> 目錄）由
                   <code>scripts/build-cache.py</code> 產生，預設每季重建。
                   若 PTX 資料有更新（路線調整、站位搬遷），需手動執行重建腳本。
+                </div>
+              </div>
+            </div>
+
+            <div class="limitation-item">
+              <div class="limitation-num">7</div>
+              <div class="limitation-content">
+                <div class="limitation-title">🌐 TDX 即時定位（非必要）</div>
+                <div class="limitation-desc">
+                  PTX 免費公開端點不提供即時公車 GPS 與 ETA，如要顯示真實車機，請至
+                  <a href="https://tdx.transportdata.tw/" target="_blank">TDX 交通資料平台</a>
+                  申請免費帳號，在
+                  <a href="wait-bus.html" target="_blank">等公車頁面</a>
+                  網址列加入：<br>
+                  <code>?tdx_id=你的client_id&amp;tdx_secret=你的client_secret</code><br>
+                  無帳號時自動降級為模擬推算模式。
+                  詳細說明見
+                  <a href="https://github.com/xuan905/taipei-bus-skill#tdx-%E5%8D%B3%E6%99%82%E8%B3%87%E6%96%99%E9%9C%80%E8%A8%AD%E5%AE%9A-tdx_client_idsecret"
+                     target="_blank">SKILL.md §TDX</a>。
                 </div>
               </div>
             </div>
