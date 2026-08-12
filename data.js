@@ -362,9 +362,208 @@ const CATEGORIES = [
   { id: 'knowledge',  key: 'catKnowledge'  },
   { id: 'life',       key: 'catLife'        },
   { id: 'tools',      key: 'catTools'       },
+,
+  {
+    id: 'bedtime-story-teller',
+    name: '睡前故事精靈',
+    name_en: 'Bedtime Story Teller',
+    slug: 'bedtime-story-teller',
+    icon: '🌙',
+    iconEmoji: '🌙',
+    category: 'life',
+    categoryLabel: { 'zh-TW': '生活・樂趣', 'zh-CN': '生活・乐趣', 'en': 'Life & Fun' },
+    tagline: {
+      'zh-TW': '用溫暖聲音為 2-6 歲孩童講床邊故事',
+      'zh-CN': '用温暖声音为 2-6 岁孩童讲床边故事',
+      'en': 'Warm bedtime stories for kids aged 2-6 with TTS voice'
+    },
+    desc: {
+      'zh-TW': '睡前故事精靈，用溫暖聲音為 2-6 歲孩童講床邊故事。20+ 故事模板、免 API、支援 TTS 朗讀、故事收藏、睡前引導。',
+      'zh-CN': '睡前故事精灵，用温暖声音为 2-6 岁孩童讲床边故事。20+ 故事模板、免 API、支持 TTS 朗读、故事收藏、睡前引导。',
+      'en': 'Warm bedtime story teller for children aged 2-6. 20+ story templates, free API, TTS voice reading, story collection, bedtime guidance.'
+    },
+    accentColor: '#6C5CE7',
+    accentBg: '#F0EDFF',
+    clawhubUrl: 'https://clawhub.ai/xuan905/skills/bedtime-story-teller',
+    githubUrl: 'https://github.com/xuan905/bedtime-story-teller',
+    siteUrl: null,
+    installCmd: 'clawhub install bedtime-story-teller',
+    keywords: ['講故事','睡前故事','床邊故事','寶寶睡覺','晚安故事','說故事'],
+    featured: false,
+    tags: ['故事', '孩童', 'TTS', '家庭'],
+  },
+  {
+    id: 'book-recommendation-engine',
+    name: '書籍推薦引擎',
+    name_en: 'Book Recommendation Engine',
+    slug: 'book-recommendation-engine',
+    icon: '🔥',
+    iconEmoji: '🔥',
+    category: 'knowledge',
+    categoryLabel: { 'zh-TW': '知識・學習', 'zh-CN': '知识・学习', 'en': 'Knowledge & Learning' },
+    tagline: {
+      'zh-TW': '整合多種推薦演算法與即時書庫資料，幫你發現下一本好書',
+      'zh-CN': '整合多种推荐算法与即时书库资料，帮你发现下一本好书',
+      'en': '4 recommendation algorithms and Open Library search — discover your next great read'
+    },
+    desc: {
+      'zh-TW': '書籍推薦引擎：支援協同過濾 / 內容相似度 / 熱門暢銷 / 標籤擴展四種演算法；內建 8 大主題書單；Open Library API 即時搜書；想讀書單追蹤含價格監控。',
+      'zh-CN': '书籍推荐引擎：支持协同过滤 / 内容相似度 / 热门畅销 / 标签扩展四种算法；内置 8 大主题书单；Open Library API 即时搜书；想读书单追踪含价格监控。',
+      'en': 'Book recommendation engine with 4 algorithms: collaborative filtering, content similarity, bestseller, and tag expansion. 8 built-in topic lists, Open Library API search, reading list with price tracking.'
+    },
+    accentColor: '#E17055',
+    accentBg: '#FFF0EC',
+    clawhubUrl: 'https://clawhub.ai/xuan905/skills/book-recommendation-engine',
+    githubUrl: 'https://github.com/xuan905/book-recommendation-engine',
+    siteUrl: null,
+    installCmd: 'clawhub install book-recommendation-engine',
+    keywords: ['推薦書','書籍推薦','找書','想讀什麼書','Open Library','主題書單','書單生成'],
+    featured: false,
+    tags: ['書本', '推薦系統', '學習'],
+  },
+  {
+    id: 'ebook-converter-pro',
+    name: '電子書轉換工具箱',
+    name_en: 'Ebook Converter Pro',
+    slug: 'ebook-converter-pro',
+    icon: '📖',
+    iconEmoji: '📖',
+    category: 'tools',
+    categoryLabel: { 'zh-TW': '工具・系統', 'zh-CN': '工具・系统', 'en': 'Tools & Systems' },
+    tagline: {
+      'zh-TW': '支援 EPUB / PDF / MOBI / AZW3 / FB2 → TXT / Markdown / HTML / JSON',
+      'zh-CN': '支持 EPUB / PDF / MOBI / AZW3 / FB2 → TXT / Markdown / HTML / JSON',
+      'en': 'Convert EPUB / PDF / MOBI / AZW3 / FB2 to TXT, Markdown, HTML, JSON'
+    },
+    desc: {
+      'zh-TW': '電子書轉換工具箱：支援 EPUB / PDF / MOBI / AZW3 / FB2 → TXT / Markdown / HTML / JSON；批量轉換、封面萃取、元資料讀寫、圖書館自動分類。',
+      'zh-CN': '电子书转换工具箱：支持 EPUB / PDF / MOBI / AZW3 / FB2 → TXT / Markdown / HTML / JSON；批量转换、封面萃取、元数据读写、图书馆自动分类。',
+      'en': 'Ebook converter toolbox supporting EPUB, PDF, MOBI, AZW3, FB2 conversion to TXT, Markdown, HTML, JSON. Batch processing, cover extraction, metadata editing, auto-categorization.'
+    },
+    accentColor: '#00B894',
+    accentBg: '#E8FBF5',
+    clawhubUrl: 'https://clawhub.ai/xuan905/skills/ebook-converter-pro',
+    githubUrl: 'https://github.com/xuan905/ebook-converter-pro',
+    siteUrl: null,
+    installCmd: 'clawhub install ebook-converter-pro',
+    keywords: ['轉換電子書','EPUB 轉 TXT','PDF 轉 Markdown','批量轉檔','圖書整理','元資料','萃取封面'],
+    featured: false,
+    tags: ['電子書', '轉檔', '工具'],
+  },
+  {
+    id: 'happy-brushing-hero',
+    name: '快樂刷牙俠',
+    name_en: 'Happy Brushing Hero',
+    slug: 'happy-brushing-hero',
+    icon: '🦷',
+    iconEmoji: '🦷',
+    category: 'life',
+    categoryLabel: { 'zh-TW': '生活・樂趣', 'zh-CN': '生活・乐趣', 'en': 'Life & Fun' },
+    tagline: {
+      'zh-TW': '讓孩子愛上刷牙的歡樂計時器與打卡系統',
+      'zh-CN': '让孩子爱上刷牙的欢乐计时器与打卡系统',
+      'en': 'A fun timer & check-in system that makes kids love brushing teeth'
+    },
+    desc: {
+      'zh-TW': '讓孩子愛上刷牙的歡樂計時器與打卡系統。用歡樂方式讓 2-6 歲孩童自願刷牙！計時 2 分鐘、音樂鼓勵、完成貼紙、連續打卡。',
+      'zh-CN': '让孩子爱上刷牙的欢乐计时器与打卡系统。用欢乐方式让 2-6 岁孩童自愿刷牙！计时 2 分钟、音乐鼓励、完成贴纸、连续打卡。',
+      'en': 'A fun tooth-brushing timer and check-in system for children aged 2-6. 2-minute timer, music encouragement, reward stickers, and streak tracking.'
+    },
+    accentColor: '#00CEC9',
+    accentBg: '#E8FAFA',
+    clawhubUrl: 'https://clawhub.ai/xuan905/skills/happy-brushing-hero',
+    githubUrl: 'https://github.com/xuan905/happy-brushing-hero',
+    siteUrl: null,
+    installCmd: 'clawhub install happy-brushing-hero',
+    keywords: ['刷牙','刷牙了沒','快去刷牙','牙齒','刷牙俠'],
+    featured: false,
+    tags: ['刷牙', '孩童', '健康', '遊戲'],
+  },
+  {
+    id: 'my-library',
+    name: '個人圖書館藏書管理',
+    name_en: 'Personal Library Manager',
+    slug: 'my-library',
+    icon: '📚',
+    iconEmoji: '📚',
+    category: 'knowledge',
+    categoryLabel: { 'zh-TW': '知識・學習', 'zh-CN': '知识・学习', 'en': 'Knowledge & Learning' },
+    tagline: {
+      'zh-TW': '支援查詢書庫、新增書籍、更新閱讀狀態與評分、分類統計、導出書單',
+      'zh-CN': '支持查询书库、新增书籍、更新阅读状态与评分、分类统计、导出书单',
+      'en': 'Query library, add books, track reading status & ratings, categorize & export'
+    },
+    desc: {
+      'zh-TW': '查書、找書、新增藏書、統計書籍、生成書單、管理閱讀記錄。支援查詢書庫、新增書籍、更新閱讀狀態與評分、分類統計、導出書單。基於 Notion API。',
+      'zh-CN': '查书、找书、新增藏书、统计书籍、生成书单、管理阅读记录。支持查询书库、新增书籍、更新阅读状态与评分、分类统计、导出书单。基于 Notion API。',
+      'en': 'Personal library manager: search, add books, track reading status & ratings, categorize, and export reading lists. Built on Notion API.'
+    },
+    accentColor: '#0984E3',
+    accentBg: '#EBF5FF',
+    clawhubUrl: 'https://clawhub.ai/xuan905/skills/my-library',
+    githubUrl: 'https://github.com/xuan905/my-library',
+    siteUrl: null,
+    installCmd: 'clawhub install my-library',
+    keywords: ['查書','找書','新增藏書','統計書籍','生成書單','個人圖書館'],
+    featured: false,
+    tags: ['圖書管理', 'Notion', '閱讀'],
+  },
+  {
+    id: 'reading-habit-tracker',
+    name: '閱讀習慣追蹤系統',
+    name_en: 'Reading Habit Tracker',
+    slug: 'reading-habit-tracker',
+    icon: '📊',
+    iconEmoji: '📊',
+    category: 'knowledge',
+    categoryLabel: { 'zh-TW': '知識・學習', 'zh-CN': '知识・学习', 'en': 'Knowledge & Learning' },
+    tagline: {
+      'zh-TW': '目標設定、進度追蹤、分析報告、落後預警、視覺化統計',
+      'zh-CN': '目标设定、进度追踪、分析报告、落后预警、可视化统计',
+      'en': 'Goal setting, progress tracking, reports, lag alerts, visual stats'
+    },
+    desc: {
+      'zh-TW': '目標設定（年目標/書單/頁數/時長）、進度追蹤、每週/每月分析報告、落後預警、視覺化統計。差異化：目標導向、計劃管理、深度數據分析。',
+      'zh-CN': '目标设定（年目标/书单/页数/时长）、进度追踪、每周/每月分析报告、落后预警、可视化统计。差异化：目标导向、计划管理、深度数据分析。',
+      'en': 'Reading habit tracker: set goals (annual/books/pages/time), track progress, weekly/monthly reports, lag alerts, and visual statistics.'
+    },
+    accentColor: '#6C5CE7',
+    accentBg: '#F0EDFF',
+    clawhubUrl: 'https://clawhub.ai/xuan905/skills/reading-habit-tracker',
+    githubUrl: 'https://github.com/xuan905/reading-habit-tracker',
+    siteUrl: null,
+    installCmd: 'clawhub install reading-habit-tracker',
+    keywords: ['閱讀目標','讀書計劃','每月閱讀','追蹤進度','閱讀統計','讀書報告'],
+    featured: false,
+    tags: ['閱讀', '目標管理', '數據分析'],
+  },
+  {
+    id: 'reading-notes-genie',
+    name: '閱讀筆記精靈',
+    name_en: 'Reading Notes Genie',
+    slug: 'reading-notes-genie',
+    icon: '📖',
+    iconEmoji: '📖',
+    category: 'knowledge',
+    categoryLabel: { 'zh-TW': '知識・學習', 'zh-CN': '知识・学习', 'en': 'Knowledge & Learning' },
+    tagline: {
+      'zh-TW': 'AI 自動生成章節摘要、精華語錄、讀書心得、知識點卡片',
+      'zh-CN': 'AI 自动生成章节摘要、精华语录、读书心得、知识卡片',
+      'en': 'AI generates chapter summaries, quotes, reviews & knowledge cards from any book'
+    },
+    desc: {
+      'zh-TW': '輸入書名 / 上傳 PDF 或 EPUB，AI 自動生成章節摘要、精華語錄、讀書心得、知識點卡片，並匯出成 Markdown、Anki 卡片、PDF 等多種格式。',
+      'zh-CN': '输入书名 / 上传 PDF 或 EPUB，AI 自动生成章节摘要、精华语录、读书心得、知识卡片，并导出成 Markdown、Anki 卡片、PDF 等多种格式。',
+      'en': 'Input a book title or upload PDF/EPUB, AI auto-generates chapter summaries, quotes, reviews, and knowledge cards, exportable to Markdown, Anki cards, PDF and more.'
+    },
+    accentColor: '#FDCB6E',
+    accentBg: '#FFF9E6',
+    clawhubUrl: 'https://clawhub.ai/xuan905/skills/reading-notes-genie',
+    githubUrl: 'https://github.com/xuan905/reading-notes-genie',
+    siteUrl: null,
+    installCmd: 'clawhub install reading-notes-genie',
+    keywords: ['讀書筆記','做筆記','章節摘要','書摘','金句','知識卡片','PDF摘要'],
+    featured: false,
+    tags: ['讀書', '筆記', 'AI', '摘要'],
+  },
 ];
-
-function getSkillsByCategory(cat) {
-  if (cat === 'all') return SKILLS;
-  return SKILLS.filter(s => s.category === cat);
-}
