@@ -325,35 +325,7 @@ const SKILLS = [
     featured: false,
     tags: ['音樂', '播放列表', 'AI', '情境感知'],
   },
-  {
-    id: 'opac-reader',
-    name: 'OPAC 自動化工具',
-    name_en: 'OPAC Automator',
-    slug: 'opac-reader',
-    icon: '🔍',
-    iconEmoji: '🔍',
-    category: 'tools',
-    categoryLabel: { 'zh-TW': '工具・系統', 'zh-CN': '工具・系统', 'en': 'Tools & Systems' },
-    tagline: {
-      'zh-TW': '寶慶圖書館 M7 OPAC 自動化：登入、借閱、續借、搜尋',
-      'zh-CN': '宝庆图书馆 M7 OPAC 自动化：登入、借阅、续借、搜寻',
-      'en': 'Library OPAC automation — login, borrow, renew, search'
-    },
-    desc: {
-      'zh-TW': '針對寶慶大學 M7 圖書館系統的自動化工具，支援自動登入、查詢借閱狀態、一鍵續借、書籍搜尋與逾期報告生成。節省手動操作時間，告別圖書館網頁的繁瑣操作。',
-      'zh-CN': '针对宝庆大学 M7 图书馆系统的自动化工具，支持自动登入、查询借阅状态、一键续借、书籍搜寻与逾期报告生成。省去手动操作时间，告别图书馆网页的繁琐操作。',
-      'en': 'Automation tool for Boqing University M7 library OPAC — auto login, check borrowing status, one-click renewals, book search, and overdue report generation. Saves time on library web operations.'
-    },
-    accentColor: '#636E72',
-    accentBg: '#F0F0F0',
-    clawhubUrl: null,
-    githubUrl: 'https://github.com/xuan905/opac-reader',
-    siteUrl: null,
-    installCmd: null,
-    keywords: ['OPAC', '圖書館', '自動化', '登入', '續借', 'Library', 'Automation'],
-    featured: false,
-    tags: ['圖書館', '自動化', 'OPAC', 'M7'],
-  },
+  
   {
     id: 'zhouyi-site-skill',
     name: '賽博周易',
